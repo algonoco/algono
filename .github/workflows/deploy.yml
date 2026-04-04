@@ -20,7 +20,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Inject Gemini API key
-        run: sed -i 's/"GEMINI_API_KEY"/"${{ secrets.GEMINI_API_KEY }}"/g' index.html
+        env:
+          GEMINI_API_KEY_SECRET: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import os
+
+          path = Path("index.html")
+          content = path.read_text(encoding="utf-8")
+          content = content.replace('"GEMINI_API_KEY"', f'"{os.environ["GEMINI_API_KEY_SECRET"]}"')
+          path.write_text(content, encoding="utf-8")
+          PY
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
