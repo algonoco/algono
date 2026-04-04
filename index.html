@@ -111,7 +111,7 @@
     }
 
     function isApiKeyConfigured() {
-      return apiKey && apiKey !== 'GEMINI_API_KEY';
+      return Boolean(apiKey) && !/^GEMINI_API_KEY(?:_PLACEHOLDER)?$/.test(apiKey);
     }
 
     async function readGeminiError(response) {

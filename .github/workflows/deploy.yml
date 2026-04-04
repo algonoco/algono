@@ -41,7 +41,7 @@ jobs:
           replacements = {
               "'GEMINI_API_KEY'": {
                   'value': os.environ['GEMINI_API_KEY_SECRET'],
-                  'expected_occurrences': 2,
+                  'expected_occurrences': 1,
               },
               "'STRIPE_LINK_PLACEHOLDER'": {
                   'value': os.environ['STRIPE_LINK_SECRET'],
