@@ -30,13 +30,14 @@ jobs:
           GEMINI_API_KEY_SECRET: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python - <<'PY'
-          from pathlib import Path
           import os
+          import json
+          from pathlib import Path
 
           path = Path('dist/index.html')
           content = path.read_text(encoding='utf-8')
           placeholder = "'GEMINI_API_KEY'"
-          replacement = repr(os.environ['GEMINI_API_KEY_SECRET'])
+          replacement = json.dumps(os.environ['GEMINI_API_KEY_SECRET'])
           occurrences = content.count(placeholder)
 
           if occurrences != 1:
