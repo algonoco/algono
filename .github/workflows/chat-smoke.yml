@@ -62,9 +62,26 @@ jobs:
                   return json.load(response)
 
           runs = read_json(f'https://api.github.com/repos/{repo}/actions/workflows/deploy.yml/runs?branch=main&status=success&per_page=1')
-          run = runs['workflow_runs'][0]
+          workflow_runs = runs.get('workflow_runs', [])
+          if not workflow_runs:
+              raise SystemExit(
+                  'Could not build smoke fixture: no successful deploy.yml runs were found on the main branch.'
+              )
+
+          run = workflow_runs[0]
           artifacts = read_json(f'https://api.github.com/repos/{repo}/actions/runs/{run["id"]}/artifacts?per_page=100')
-          artifact = next(item for item in artifacts['artifacts'] if item['name'] == 'github-pages' and not item['expired'])
+          artifact = next(
+              (
+                  item
+                  for item in artifacts.get('artifacts', [])
+                  if item['name'] == 'github-pages' and not item['expired']
+              ),
+              None,
+          )
+          if artifact is None:
+              raise SystemExit(
+                  'Could not build smoke fixture: no non-expired github-pages artifact was found for the latest successful deploy.yml run.'
+              )
 
           artifact_dir = Path('/tmp/algono-chat-smoke-artifact')
           artifact_dir.mkdir(parents=True, exist_ok=True)
@@ -157,9 +174,14 @@ jobs:
 
             await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
             await page.getByText('what do you want to know?').waitFor({ timeout: 20000 });
-            await page.waitForTimeout(1500);
 
             const input = page.getByLabel('Type your message');
+            await input.waitFor({ state: 'attached', timeout: 5000 });
+            await page.waitForFunction(() => {
+              const el = document.querySelector('textarea[aria-label="Type your message"]');
+              return el && !el.disabled;
+            }, { timeout: 5000 });
+
             await input.fill('what does algono do?');
             await input.press('Enter');
 
