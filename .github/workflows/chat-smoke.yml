@@ -46,7 +46,7 @@ jobs:
           import tarfile
           import urllib.request
           import zipfile
-          from pathlib import Path
+          from pathlib import Path, PurePosixPath
 
           repo = os.environ['GITHUB_REPOSITORY']
           token = os.environ['GITHUB_TOKEN']
@@ -81,7 +81,19 @@ jobs:
           with zipfile.ZipFile(zip_path) as archive:
               with archive.open('artifact.tar') as artifact_tar:
                   with tarfile.open(fileobj=artifact_tar, mode='r:*') as tar_archive:
-                      index_member = tar_archive.extractfile('index.html')
+                      index_entry = next(
+                          (
+                              member
+                              for member in tar_archive.getmembers()
+                              if member.isfile() and PurePosixPath(member.name).name == 'index.html'
+                          ),
+                          None,
+                      )
+
+                      if index_entry is None:
+                          raise SystemExit('Could not find index.html in the latest deployed artifact.')
+
+                      index_member = tar_archive.extractfile(index_entry)
 
                       if index_member is None:
                           raise SystemExit('Could not read index.html from the latest deployed artifact.')
