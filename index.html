@@ -3,168 +3,238 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Algono — Least Privileged. Open-source AD audit engine for sysadmins. Find out exactly how compromised your directory is." />
-  <title>algono — least privileged</title>
+  <meta name="description" content="Algono — Active Directory / Entra ID over-provisioning remediation toolkit." />
+  <title>&gt;_ algono</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-
-  <header class="site-header">
-    <div class="logo">
-      <span class="prompt">&gt;_</span><span class="brand">algono</span>
+  <div id="app">
+    <div id="logo">&gt;_ algono</div>
+    <div id="chat-log" role="log" aria-live="polite" aria-label="Chat messages"></div>
+    <div id="input-area">
+      <span id="input-prompt">&gt;</span>
+      <input
+        type="text"
+        id="user-input"
+        disabled
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="Type your message"
+        placeholder="type here..."
+      />
+      <button id="send-btn" aria-label="Send message" disabled>send</button>
     </div>
-    <nav class="nav-links">
-      <a href="https://github.com/algonoco" target="_blank" rel="noopener">github</a>
-    </nav>
-  </header>
+  </div>
 
-  <main>
+  <script>
+    /* ── configuration ────────────────────────────────────── */
 
-    <!-- Hero -->
-    <section class="hero">
-      <div class="hero-inner">
-        <p class="hero-eyebrow">// open-source · AD audit engine · free scan</p>
-        <h1 class="hero-headline">
-          <span class="prompt">&gt;_</span> your directory<br />
-          is leaking.
-        </h1>
-        <p class="hero-sub">
-          Algono is a least-privilege audit engine for Active Directory environments.
-          It scans your directory, calculates exposure, and compiles a
-          museum-quality PDF report — so you can see exactly what attackers already know.
-        </p>
-        <div class="hero-cta-group">
-          <a href="#access" class="btn btn-primary">get the scanner</a>
-          <a href="#service" class="btn btn-ghost">book the audit →</a>
-        </div>
-      </div>
-    </section>
+    const GEMINI_API_KEY = "GEMINI_API_KEY";
+    const STRIPE_LINK    = "https://buy.stripe.com/00wfZjcw38no4bdbNp6wE00";
+    const SCANNER_LINK   = "SCAN_SCRIPT_LINK_PLACEHOLDER";
 
-    <!-- What It Does -->
-    <section class="section-features" id="about">
-      <div class="container">
-        <h2 class="section-title">// what the engine does</h2>
-        <div class="feature-grid">
-          <div class="feature-card">
-            <span class="feature-icon">[01]</span>
-            <h3>Privilege Mapping</h3>
-            <p>Enumerates every account, group membership, and delegated right across your domain. No guessing — exact blast radii.</p>
-          </div>
-          <div class="feature-card">
-            <span class="feature-icon">[02]</span>
-            <h3>Exposure Scoring</h3>
-            <p>Calculates a per-account and domain-wide exposure score. Weighted by attack-path depth, not just count.</p>
-          </div>
-          <div class="feature-card">
-            <span class="feature-icon">[03]</span>
-            <h3>PDF Report</h3>
-            <p>Compiles findings into a typographically precise PDF — kerned, margined, and clean enough to hand to your board.</p>
-          </div>
-          <div class="feature-card">
-            <span class="feature-icon">[04]</span>
-            <h3>Zero Telemetry</h3>
-            <p>Runs entirely on-prem. No data leaves your network. Open source — read every line before you execute.</p>
-          </div>
-        </div>
-      </div>
-    </section>
+    const GEMINI_URL =
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + GEMINI_API_KEY;
 
-    <!-- Access Ritual -->
-    <section class="section-access" id="access">
-      <div class="container">
-        <h2 class="section-title">// request access</h2>
-        <p class="section-lead">
-          The scanner is free and open source. To maintain the right audience,
-          access is not linked from this page — you knock, we answer.
-          Choose your door.
-        </p>
+    const SYSTEM_PROMPT = [
+      "You are the Algono sales agent — terse, direct, terminal-aesthetic voice.",
+      "Product: Algono is an Active Directory / Entra ID over-provisioning remediation toolkit.",
+      "Tier 1 (free): A scanner script. Runs on-prem, zero telemetry. Produces a PDF exposure report showing every over-provisioned account, group, and delegated right. Scanner link: " + SCANNER_LINK,
+      "Tier 2 ($400 one-time): The full remediation + rollback kit. Includes the scanner plus automated least-privilege enforcement and a full rollback safety net. One-time purchase, no subscription. Stripe checkout link: " + STRIPE_LINK,
+      "Tone: You are not a funnel. You are not collecting emails. You are not nurturing leads. If someone asks, you give them what they need — the scanner link, the Stripe link, or an honest answer. We don't even want their email address.",
+      "Keep responses short. A few sentences max. Use lowercase. No emoji. No markdown headers. Match the terminal vibe.",
+      "If someone asks what Algono does, explain it plainly: it scans AD environments, maps privilege exposure, scores blast radii, and compiles a report. The scanner is free. The full kit is $400.",
+      "If someone wants the scanner, give them the scanner link.",
+      "If someone wants the full kit, drop the Stripe link.",
+      "Do not make up features. Do not promise things the product does not do.",
+    ].join("\n");
 
-        <div class="door-grid">
+    const TYPEWRITER_DELAY = 18; // ms per character
+    const FETCH_TIMEOUT_MS = 30000;
 
-          <!-- Door A: Email -->
-          <div class="door-card" id="door-email">
-            <div class="door-label">door_a: email knock</div>
-            <div class="terminal-block">
-              <span class="tb-prompt">$</span>
-              <span class="tb-cmd">mail knock@algono.co</span>
-              <span class="tb-comment"># blank subject, blank body</span>
-            </div>
-            <p class="door-desc">
-              Send a blank email to
-              <a href="mailto:knock@algono.co" class="inline-link">knock@algono.co</a>.
-              The autoresponder replies instantly with the repository link.
-            </p>
-            <a href="mailto:knock@algono.co" class="btn btn-door">
-              &gt;_ send the knock
-            </a>
-          </div>
+    /* ── session conversation memory (Gemini API format) ─── */
 
-          <!-- Door B: GitHub -->
-          <div class="door-card" id="door-github">
-            <div class="door-label">door_b: github gate</div>
-            <div class="terminal-block">
-              <span class="tb-prompt">$</span>
-              <span class="tb-cmd">gh issue create \</span>
-              <br />
-              <span class="tb-indent">--repo algonoco/access \</span>
-              <br />
-              <span class="tb-indent">--title "init"</span>
-              <span class="tb-comment"># that's it</span>
-            </div>
-            <p class="door-desc">
-              Open an issue titled <code>init</code> on
-              <a href="https://github.com/algonoco/access" class="inline-link" target="_blank" rel="noopener">algonoco/access</a>.
-              A GitHub Action comments the repository link and closes the issue automatically.
-            </p>
-            <a href="https://github.com/algonoco/access/issues/new?title=init" class="btn btn-door" target="_blank" rel="noopener">
-              &gt;_ open the issue
-            </a>
-          </div>
+    const conversationContents = [];
 
-        </div>
+    /* ── DOM refs ─────────────────────────────────────────── */
 
-        <p class="ritual-note">
-          // you performed the ritual. the findings will hit harder for it.
-        </p>
-      </div>
-    </section>
+    const chatLog   = document.getElementById('chat-log');
+    const userInput = document.getElementById('user-input');
+    const sendBtn   = document.getElementById('send-btn');
 
-    <!-- Managed Service -->
-    <section class="section-service" id="service">
-      <div class="container">
-        <h2 class="section-title">// skip the terminal</h2>
-        <div class="service-card">
-          <div class="service-copy">
-            <p class="service-price">$400</p>
-            <p class="service-tagline">managed audit — we run it, you get the report</p>
-            <ul class="service-list">
-              <li>We execute the scan against your environment</li>
-              <li>Full privilege-mapping and exposure scoring</li>
-              <li>PDF delivered within 48 hours</li>
-              <li>30-minute debrief call included</li>
-              <li>Remediation checklist with prioritized actions</li>
-            </ul>
-            <!-- TODO: replace with real Stripe payment link before going live -->
-            <a href="https://buy.stripe.com/algono-audit" class="btn btn-purchase" id="stripe-cta">
-              &gt;_ book the $400 audit
-            </a>
-            <p class="service-note">// secure checkout via Stripe. no subscription.</p>
-          </div>
-        </div>
-      </div>
-    </section>
+    /* ── helpers ──────────────────────────────────────────── */
 
-  </main>
+    function scrollBottom() {
+      window.scrollTo(0, document.documentElement.scrollHeight);
+    }
 
-  <footer class="site-footer">
-    <div class="container footer-inner">
-      <span class="footer-logo"><span class="prompt">&gt;_</span>algono</span>
-      <span class="footer-copy">
-        &copy; 2026 Algono &mdash; MIT License &mdash;
-        <a href="mailto:knock@algono.co" class="inline-link">knock@algono.co</a>
-      </span>
-    </div>
-  </footer>
+    function appendLine(prefix, prefixClass, textClass) {
+      const line = document.createElement('div');
+      line.className = 'chat-line';
 
+      const pre = document.createElement('span');
+      pre.className = 'prefix ' + prefixClass;
+      pre.textContent = prefix;
+
+      const text = document.createElement('span');
+      text.className = 'text ' + textClass;
+
+      line.appendChild(pre);
+      line.appendChild(text);
+      chatLog.appendChild(line);
+      scrollBottom();
+      return { line, text };
+    }
+
+    function addCursor(parent) {
+      const cur = document.createElement('span');
+      cur.className = 'cursor';
+      parent.appendChild(cur);
+      return cur;
+    }
+
+    function removeCursors() {
+      chatLog.querySelectorAll('.cursor').forEach(c => c.remove());
+    }
+
+    function pause(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function typewrite(el, str, delay) {
+      return new Promise(resolve => {
+        let i = 0;
+        (function tick() {
+          if (i < str.length) {
+            el.textContent += str[i++];
+            scrollBottom();
+            setTimeout(tick, delay);
+          } else {
+            resolve();
+          }
+        })();
+      });
+    }
+
+    /* ── opening sequence ─────────────────────────────────── */
+
+    async function openingSequence() {
+      const openingLines = [
+        { text: 'your directory is leaking.', pauseAfter: 400 },
+        { text: 'we see it everywhere.', pauseAfter: 150 },
+        { text: 'interns with Domain Admin.', pauseAfter: 120 },
+        { text: 'level 1 helpdesk with god-mode.', pauseAfter: 130 },
+        { text: 'that contractor from 2019 who never got offboarded.', pauseAfter: 700 },
+        { text: "there's a script for that.", pauseAfter: 500 },
+        { text: 'what do you want to know?', pauseAfter: 0 },
+      ];
+
+      let finalLine;
+
+      for (const { text, pauseAfter } of openingLines) {
+        const entry = appendLine('$', 'agent-prefix', 'agent-text');
+        await typewrite(entry.text, text, TYPEWRITER_DELAY);
+        finalLine = entry.line;
+        await pause(pauseAfter);
+      }
+
+      const handoffCursor = addCursor(finalLine);
+      await pause(1200);
+      handoffCursor.remove();
+      setWorking(false);
+      userInput.focus();
+    }
+
+    /* ── send / receive ───────────────────────────────────── */
+
+    function setWorking(on) {
+      userInput.disabled = on;
+      sendBtn.disabled   = on;
+    }
+
+    async function sendMessage() {
+      const msg = userInput.value.trim();
+      if (!msg) return;
+
+      userInput.value = '';
+      setWorking(true);
+      removeCursors();
+
+      appendLine('>', 'user-prefix', 'user-text').text.textContent = msg;
+
+      conversationContents.push({
+        role: 'user',
+        parts: [{ text: msg }],
+      });
+
+      const { line: agentLine, text: agentText } = appendLine('$', 'agent-prefix', 'agent-text');
+      const thinkCursor = addCursor(agentLine);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+      try {
+        const res = await fetch(GEMINI_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            system_instruction: {
+              parts: [{ text: SYSTEM_PROMPT }],
+            },
+            contents: conversationContents,
+          }),
+        });
+
+        clearTimeout(timeout);
+
+        if (!res.ok) {
+          const body = await res.text();
+          throw new Error('HTTP ' + res.status + ': ' + body.slice(0, 120));
+        }
+
+        thinkCursor.remove();
+
+        const data = await res.json();
+        const reply =
+          data.candidates?.[0]?.content?.parts?.[0]?.text ??
+          '(no response)';
+
+        conversationContents.push({
+          role: 'model',
+          parts: [{ text: reply }],
+        });
+
+        await typewrite(agentText, reply, TYPEWRITER_DELAY);
+
+      } catch (err) {
+        clearTimeout(timeout);
+        thinkCursor.remove();
+        const errMsg = err.name === 'AbortError'
+          ? 'error: request timed out.'
+          : 'error: ' + err.message;
+        agentText.textContent = errMsg;
+      }
+
+      addCursor(agentLine);
+      setWorking(false);
+      userInput.focus();
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' || e.isComposing) return;
+      e.preventDefault();
+      sendMessage();
+    });
+
+    setWorking(true);
+    openingSequence();
+  </script>
 </body>
 </html>
