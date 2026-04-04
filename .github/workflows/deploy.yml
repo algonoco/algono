@@ -25,28 +25,45 @@ jobs:
           cp index.html styles.css CNAME dist/
           cp -R assets dist/assets
 
-      - name: Inject Gemini API key
+      - name: Inject deploy-time placeholders
         env:
           GEMINI_API_KEY_SECRET: ${{ secrets.GEMINI_API_KEY }}
+          STRIPE_LINK_SECRET: ${{ secrets.STRIPE_LINK }}
         run: |
           python - <<'PY'
-          import os
           import json
+          import os
           from pathlib import Path
 
           path = Path('dist/index.html')
           content = path.read_text(encoding='utf-8')
-          placeholder = "'GEMINI_API_KEY'"
-          replacement = json.dumps(os.environ['GEMINI_API_KEY_SECRET'])
-          occurrences = content.count(placeholder)
 
-          if occurrences != 1:
-              raise SystemExit(f'Expected exactly 1 occurrence of {placeholder} in dist/index.html, found {occurrences}.')
+          replacements = {
+              "'GEMINI_API_KEY'": {
+                  'value': os.environ['GEMINI_API_KEY_SECRET'],
+                  'expected_occurrences': 1,
+              },
+              "'STRIPE_LINK_PLACEHOLDER'": {
+                  'value': os.environ['STRIPE_LINK_SECRET'],
+                  'expected_occurrences': 1,
+              },
+          }
 
-          content = content.replace(placeholder, replacement, 1)
+          for placeholder, config in replacements.items():
+              secret_value = config['value']
+              if not secret_value:
+                  raise SystemExit(f'Missing required secret for {placeholder}.')
 
-          if placeholder in content:
-              raise SystemExit(f'{placeholder} placeholder still present in dist/index.html after injection.')
+              occurrences = content.count(placeholder)
+              if occurrences != config['expected_occurrences']:
+                  raise SystemExit(
+                      f"Expected exactly {config['expected_occurrences']} occurrence(s) of {placeholder} in dist/index.html, found {occurrences}."
+                  )
+
+              content = content.replace(placeholder, json.dumps(secret_value))
+
+              if placeholder in content:
+                  raise SystemExit(f'{placeholder} placeholder still present in dist/index.html after injection.')
 
           path.write_text(content, encoding='utf-8')
           PY

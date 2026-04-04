@@ -6,9 +6,6 @@
   <meta name="description" content="Algono — Active Directory / Entra ID over-provisioning remediation toolkit." />
   <meta name="theme-color" content="#000000" />
   <title>algono</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
@@ -49,6 +46,7 @@
     const apiKey = 'GEMINI_API_KEY';
     const STRIPE_LINK = 'STRIPE_LINK_PLACEHOLDER';
     const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+    const REQUEST_TIMEOUT_MS = 30000;
 
     const SYSTEM_PROMPT = [
       'You are the Algono agent. Algono is an Active Directory and Entra ID over-provisioning remediation toolkit built by a practitioner. You are terse, technically credible, and do not waste words. You do not ask for email addresses. You do not push users into funnels. You answer what is asked.',
@@ -112,6 +110,103 @@
       sendBtn.disabled = disabled;
     }
 
+    function isApiKeyConfigured() {
+      return Boolean(apiKey) && apiKey.startsWith('AIza') && apiKey.length === 39;
+    }
+
+    async function readGeminiError(response) {
+      try {
+        const data = await response.json();
+        return data?.error?.message?.trim() || '';
+      } catch {
+        return '';
+      }
+    }
+
+    function getHttpErrorText(status) {
+      if (status === 400) {
+        return 'request rejected. try again.';
+      }
+
+      if (status === 401 || status === 403) {
+        return 'gemini key rejected.';
+      }
+
+      if (status === 429) {
+        return 'rate limited. try again.';
+      }
+
+      if (status >= 500) {
+        return 'gemini is down. try again.';
+      }
+
+      return 'request failed. try again.';
+    }
+
+    function getRequestErrorText(error) {
+      if (error?.code === 'missing_api_key') {
+        return 'chat offline. key missing.';
+      }
+
+      if (!navigator.onLine) {
+        return 'offline. try again.';
+      }
+
+      if (error?.name === 'AbortError') {
+        return 'gemini timed out. try again.';
+      }
+
+      return 'google api blocked. try another network.';
+    }
+
+    async function requestGeminiReply() {
+      if (!isApiKeyConfigured()) {
+        const error = new Error('Gemini API key is missing.');
+        error.code = 'missing_api_key';
+        throw error;
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+      try {
+        const response = await fetch(GEMINI_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            system_instruction: {
+              parts: [{ text: SYSTEM_PROMPT }]
+            },
+            contents: conversationContents
+          })
+        });
+
+        if (!response.ok) {
+          const detail = await readGeminiError(response);
+          const error = new Error(detail || 'Gemini request failed.');
+          error.status = response.status;
+          throw error;
+        }
+
+        const data = await response.json();
+        const reply = data.candidates?.[0]?.content?.parts
+          ?.map(part => part.text || '')
+          .join('')
+          .trim();
+
+        if (!reply) {
+          throw new Error('Gemini returned an empty response.');
+        }
+
+        return reply;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
     async function typewrite(target, text) {
       for (const char of text) {
         target.textContent += char;
@@ -152,42 +247,18 @@
       const userLine = appendLine('>', 'user-line');
       userLine.text.textContent = message;
 
-      conversationContents.push({
+      const userEntry = {
         role: 'user',
         parts: [{ text: message }]
-      });
+      };
+      conversationContents.push(userEntry);
 
       const agentLine = appendLine('$', 'agent-line');
       agentLine.text.textContent = '_';
       agentLine.text.classList.add('pending-text');
 
       try {
-        const response = await fetch(GEMINI_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            system_instruction: {
-              parts: [{ text: SYSTEM_PROMPT }]
-            },
-            contents: conversationContents
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error('request failed');
-        }
-
-        const data = await response.json();
-        const reply = data.candidates?.[0]?.content?.parts
-          ?.map(part => part.text || '')
-          .join('')
-          .trim();
-
-        if (!reply) {
-          throw new Error('empty response');
-        }
+        const reply = await requestGeminiReply();
 
         conversationContents.push({
           role: 'model',
@@ -198,8 +269,15 @@
         agentLine.text.textContent = '';
         await typewrite(agentLine.text, reply);
       } catch (error) {
+        if (conversationContents[conversationContents.length - 1] === userEntry) {
+          conversationContents.pop();
+        }
+
+        console.error('gemini request failed', error);
         agentLine.text.classList.remove('pending-text');
-        agentLine.text.textContent = 'connection refused. try again.';
+        agentLine.text.textContent = error?.status
+          ? getHttpErrorText(error.status)
+          : getRequestErrorText(error);
       } finally {
         setInputState(false);
         userInput.focus();

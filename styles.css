@@ -12,7 +12,7 @@
   --text: #ffffff;
   --muted: #c8c8c8;
   --dim: rgba(255, 255, 255, 0.35);
-  --font: 'JetBrains Mono', monospace;
+  --font: ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
   --size: 14px;
 }
 
