@@ -111,7 +111,7 @@
     }
 
     function isApiKeyConfigured() {
-      return Boolean(apiKey) && !/^GEMINI_API_KEY(?:_PLACEHOLDER)?$/.test(apiKey);
+      return Boolean(apiKey) && apiKey.startsWith('AIza');
     }
 
     async function readGeminiError(response) {
