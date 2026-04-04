@@ -19,6 +19,7 @@
       <input
         type="text"
         id="user-input"
+        disabled
         autocomplete="off"
         autocorrect="off"
         autocapitalize="off"
@@ -26,15 +27,16 @@
         aria-label="Type your message"
         placeholder="type here..."
       />
-      <button id="send-btn" aria-label="Send message">send</button>
+      <button id="send-btn" aria-label="Send message" disabled>send</button>
     </div>
   </div>
 
   <script>
     /* ── configuration ────────────────────────────────────── */
 
-    const GEMINI_API_KEY = "YOUR_KEY_HERE";
-    const STRIPE_LINK    = "STRIPE_LINK_HERE";
+    const GEMINI_API_KEY = "GEMINI_API_KEY_PLACEHOLDER";
+    const STRIPE_LINK    = "https://buy.stripe.com/00wfZjcw38no4bdbNp6wE00";
+    const SCANNER_LINK   = "SCAN_SCRIPT_LINK_PLACEHOLDER";
 
     const GEMINI_URL =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + GEMINI_API_KEY;
@@ -42,12 +44,12 @@
     const SYSTEM_PROMPT = [
       "You are the Algono sales agent — terse, direct, terminal-aesthetic voice.",
       "Product: Algono is an Active Directory / Entra ID over-provisioning remediation toolkit.",
-      "Tier 1 (free): A scanner script. Runs on-prem, zero telemetry. Produces a PDF exposure report showing every over-provisioned account, group, and delegated right. The user just has to ask you for it.",
+      "Tier 1 (free): A scanner script. Runs on-prem, zero telemetry. Produces a PDF exposure report showing every over-provisioned account, group, and delegated right. Scanner link: " + SCANNER_LINK,
       "Tier 2 ($400 one-time): The full remediation + rollback kit. Includes the scanner plus automated least-privilege enforcement and a full rollback safety net. One-time purchase, no subscription. Stripe checkout link: " + STRIPE_LINK,
       "Tone: You are not a funnel. You are not collecting emails. You are not nurturing leads. If someone asks, you give them what they need — the scanner link, the Stripe link, or an honest answer. We don't even want their email address.",
       "Keep responses short. A few sentences max. Use lowercase. No emoji. No markdown headers. Match the terminal vibe.",
       "If someone asks what Algono does, explain it plainly: it scans AD environments, maps privilege exposure, scores blast radii, and compiles a report. The scanner is free. The full kit is $400.",
-      "If someone wants the scanner, tell them to ask for it and you will provide the link.",
+      "If someone wants the scanner, give them the scanner link.",
       "If someone wants the full kit, drop the Stripe link.",
       "Do not make up features. Do not promise things the product does not do.",
     ].join("\n");
@@ -68,7 +70,7 @@
     /* ── helpers ──────────────────────────────────────────── */
 
     function scrollBottom() {
-      chatLog.scrollTop = chatLog.scrollHeight;
+      window.scrollTo(0, document.documentElement.scrollHeight);
     }
 
     function appendLine(prefix, prefixClass, textClass) {
@@ -100,6 +102,10 @@
       chatLog.querySelectorAll('.cursor').forEach(c => c.remove());
     }
 
+    function pause(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     function typewrite(el, str, delay) {
       return new Promise(resolve => {
         let i = 0;
@@ -118,17 +124,30 @@
     /* ── opening sequence ─────────────────────────────────── */
 
     async function openingSequence() {
-      await new Promise(r => setTimeout(r, 600));
+      const openingLines = [
+        { text: 'your directory is leaking.', pauseAfter: 400 },
+        { text: 'we see it everywhere.', pauseAfter: 150 },
+        { text: 'interns with Domain Admin.', pauseAfter: 120 },
+        { text: 'level 1 helpdesk with god-mode.', pauseAfter: 130 },
+        { text: 'that contractor from 2019 who never got offboarded.', pauseAfter: 700 },
+        { text: "there's a script for that.", pauseAfter: 500 },
+        { text: 'what do you want to know?', pauseAfter: 0 },
+      ];
 
-      const { text: t1 } = appendLine('$', 'agent-prefix', 'agent-text');
-      await typewrite(t1, 'your directory is leaking.', TYPEWRITER_DELAY);
+      let finalLine;
 
-      const { text: t2 } = appendLine('$', 'agent-prefix', 'agent-text');
-      await typewrite(t2, "we don't even want your email. just ask.", TYPEWRITER_DELAY);
+      for (const { text, pauseAfter } of openingLines) {
+        const entry = appendLine('$', 'agent-prefix', 'agent-text');
+        await typewrite(entry.text, text, TYPEWRITER_DELAY);
+        finalLine = entry.line;
+        await pause(pauseAfter);
+      }
 
-      const { line: l3, text: t3 } = appendLine('$', 'agent-prefix', 'agent-text');
-      await typewrite(t3, 'find out.', TYPEWRITER_DELAY);
-      addCursor(l3);
+      const handoffCursor = addCursor(finalLine);
+      await pause(1200);
+      handoffCursor.remove();
+      setWorking(false);
+      userInput.focus();
     }
 
     /* ── send / receive ───────────────────────────────────── */
@@ -214,6 +233,7 @@
       sendMessage();
     });
 
+    setWorking(true);
     openingSequence();
   </script>
 </body>
