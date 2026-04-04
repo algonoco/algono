@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Inject Gemini API key
-        run: sed -i "s/GEMINI_API_KEY_PLACEHOLDER/${{ secrets.GEMINI_API_KEY }}/g" index.html
+        run: sed -i 's/"GEMINI_API_KEY"/"${{ secrets.GEMINI_API_KEY }}"/g' index.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
