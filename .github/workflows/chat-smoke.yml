@@ -177,10 +177,7 @@ jobs:
 
             const input = page.getByLabel('Type your message');
             await input.waitFor({ state: 'attached', timeout: 5000 });
-            await page.waitForFunction(() => {
-              const el = document.querySelector('textarea[aria-label="Type your message"]');
-              return el && !el.disabled;
-            }, { timeout: 5000 });
+            await input.waitFor({ state: 'enabled', timeout: 5000 });
 
             await input.fill('what does algono do?');
             await input.press('Enter');
