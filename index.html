@@ -209,7 +209,7 @@
 
     sendBtn.addEventListener('click', sendMessage);
     userInput.addEventListener('keydown', e => {
-      if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
+      if (e.key !== 'Enter' || e.isComposing) return;
       e.preventDefault();
       sendMessage();
     });
