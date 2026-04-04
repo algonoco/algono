@@ -42,6 +42,7 @@ jobs:
           import json
           import os
           import re
+          import subprocess
           import tarfile
           import urllib.request
           import zipfile
@@ -68,10 +69,14 @@ jobs:
           artifact_dir = Path('/tmp/algono-chat-smoke-artifact')
           artifact_dir.mkdir(parents=True, exist_ok=True)
           zip_path = artifact_dir / 'artifact.zip'
-          download_request = urllib.request.Request(artifact['archive_download_url'], headers=api_headers)
-
-          with urllib.request.urlopen(download_request) as response:
-              zip_path.write_bytes(response.read())
+          subprocess.run([
+              'curl',
+              '-fsSL',
+              '-H', f'Authorization: Bearer {token}',
+              '-H', 'Accept: application/vnd.github+json',
+              artifact['archive_download_url'],
+              '-o', str(zip_path),
+          ], check=True)
 
           with zipfile.ZipFile(zip_path) as archive:
               with archive.open('artifact.tar') as artifact_tar:
