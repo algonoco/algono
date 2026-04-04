@@ -31,13 +31,39 @@
   </div>
 
   <script>
-    const AGENT_ENDPOINT = "https://YOUR_ENDPOINT_HERE";
+    /* ── configuration ────────────────────────────────────── */
+
+    const GEMINI_API_KEY = "YOUR_KEY_HERE";
+    const STRIPE_LINK    = "STRIPE_LINK_HERE";
+
+    const GEMINI_URL =
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + GEMINI_API_KEY;
+
+    const SYSTEM_PROMPT = [
+      "You are the Algono sales agent — terse, direct, terminal-aesthetic voice.",
+      "Product: Algono is an Active Directory / Entra ID over-provisioning remediation toolkit.",
+      "Tier 1 (free): A scanner script. Runs on-prem, zero telemetry. Produces a PDF exposure report showing every over-provisioned account, group, and delegated right. The user just has to ask you for it.",
+      "Tier 2 ($400 one-time): The full remediation + rollback kit. Includes the scanner plus automated least-privilege enforcement and a full rollback safety net. One-time purchase, no subscription. Stripe checkout link: " + STRIPE_LINK,
+      "Tone: You are not a funnel. You are not collecting emails. You are not nurturing leads. If someone asks, you give them what they need — the scanner link, the Stripe link, or an honest answer. We don't even want their email address.",
+      "Keep responses short. A few sentences max. Use lowercase. No emoji. No markdown headers. Match the terminal vibe.",
+      "If someone asks what Algono does, explain it plainly: it scans AD environments, maps privilege exposure, scores blast radii, and compiles a report. The scanner is free. The full kit is $400.",
+      "If someone wants the scanner, tell them to ask for it and you will provide the link.",
+      "If someone wants the full kit, drop the Stripe link.",
+      "Do not make up features. Do not promise things the product does not do.",
+    ].join("\n");
 
     const TYPEWRITER_DELAY = 18; // ms per character
+    const FETCH_TIMEOUT_MS = 30000;
 
-    const chatLog  = document.getElementById('chat-log');
+    /* ── session conversation memory (Gemini API format) ─── */
+
+    const conversationContents = [];
+
+    /* ── DOM refs ─────────────────────────────────────────── */
+
+    const chatLog   = document.getElementById('chat-log');
     const userInput = document.getElementById('user-input');
-    const sendBtn  = document.getElementById('send-btn');
+    const sendBtn   = document.getElementById('send-btn');
 
     /* ── helpers ──────────────────────────────────────────── */
 
@@ -46,14 +72,14 @@
     }
 
     function appendLine(prefix, prefixClass, textClass) {
-      const line   = document.createElement('div');
+      const line = document.createElement('div');
       line.className = 'chat-line';
 
-      const pre    = document.createElement('span');
+      const pre = document.createElement('span');
       pre.className = 'prefix ' + prefixClass;
       pre.textContent = prefix;
 
-      const text   = document.createElement('span');
+      const text = document.createElement('span');
       text.className = 'text ' + textClass;
 
       line.appendChild(pre);
@@ -95,11 +121,14 @@
       await new Promise(r => setTimeout(r, 600));
 
       const { text: t1 } = appendLine('$', 'agent-prefix', 'agent-text');
-      await typewrite(t1, 'your AD is probably on fire.', TYPEWRITER_DELAY);
+      await typewrite(t1, 'your directory is leaking.', TYPEWRITER_DELAY);
 
-      const { line: l2, text: t2 } = appendLine('$', 'agent-prefix', 'agent-text');
-      await typewrite(t2, 'find out.', TYPEWRITER_DELAY);
-      addCursor(l2);
+      const { text: t2 } = appendLine('$', 'agent-prefix', 'agent-text');
+      await typewrite(t2, "we don't even want your email. just ask.", TYPEWRITER_DELAY);
+
+      const { line: l3, text: t3 } = appendLine('$', 'agent-prefix', 'agent-text');
+      await typewrite(t3, 'find out.', TYPEWRITER_DELAY);
+      addCursor(l3);
     }
 
     /* ── send / receive ───────────────────────────────────── */
@@ -117,70 +146,60 @@
       setWorking(true);
       removeCursors();
 
-      appendLine('&gt;', 'user-prefix', 'user-text').text.textContent = msg;
+      appendLine('>', 'user-prefix', 'user-text').text.textContent = msg;
+
+      conversationContents.push({
+        role: 'user',
+        parts: [{ text: msg }],
+      });
 
       const { line: agentLine, text: agentText } = appendLine('$', 'agent-prefix', 'agent-text');
       const thinkCursor = addCursor(agentLine);
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
       try {
-        const res = await fetch(AGENT_ENDPOINT, {
+        const res = await fetch(GEMINI_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: msg }),
+          signal: controller.signal,
+          body: JSON.stringify({
+            system_instruction: {
+              parts: [{ text: SYSTEM_PROMPT }],
+            },
+            contents: conversationContents,
+          }),
         });
 
-        if (!res.ok) throw new Error('HTTP ' + res.status);
+        clearTimeout(timeout);
 
-        thinkCursor.remove();
-
-        const ct = res.headers.get('Content-Type') || '';
-
-        if (ct.includes('text/event-stream')) {
-          // Server-Sent Events streaming
-          const reader  = res.body.getReader();
-          const decoder = new TextDecoder();
-          let buf = '';
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buf += decoder.decode(value, { stream: true });
-            const parts = buf.split('\n');
-            buf = parts.pop();
-            for (const part of parts) {
-              if (!part.startsWith('data: ')) continue;
-              const raw = part.slice(6).trim();
-              if (raw === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(raw);
-                const chunk =
-                  parsed.content ??
-                  parsed.delta?.content ??
-                  parsed.choices?.[0]?.delta?.content ??
-                  '';
-                for (const ch of chunk) {
-                  agentText.textContent += ch;
-                  scrollBottom();
-                  await new Promise(r => setTimeout(r, TYPEWRITER_DELAY));
-                }
-              } catch (_) { /* skip malformed frames */ }
-            }
-          }
-        } else {
-          // Full JSON response — typewriter-animate client-side
-          const data = await res.json();
-          const reply =
-            data.reply   ??
-            data.message ??
-            data.content ??
-            data.response ??
-            JSON.stringify(data);
-          await typewrite(agentText, String(reply), TYPEWRITER_DELAY);
+        if (!res.ok) {
+          const body = await res.text();
+          throw new Error('HTTP ' + res.status + ': ' + body.slice(0, 120));
         }
 
-      } catch (err) {
         thinkCursor.remove();
-        agentText.textContent = 'error: ' + err.message;
+
+        const data = await res.json();
+        const reply =
+          data.candidates?.[0]?.content?.parts?.[0]?.text ??
+          '(no response)';
+
+        conversationContents.push({
+          role: 'model',
+          parts: [{ text: reply }],
+        });
+
+        await typewrite(agentText, reply, TYPEWRITER_DELAY);
+
+      } catch (err) {
+        clearTimeout(timeout);
+        thinkCursor.remove();
+        const errMsg = err.name === 'AbortError'
+          ? 'error: request timed out.'
+          : 'error: ' + err.message;
+        agentText.textContent = errMsg;
       }
 
       addCursor(agentLine);
@@ -190,7 +209,9 @@
 
     sendBtn.addEventListener('click', sendMessage);
     userInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') sendMessage();
+      if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
+      e.preventDefault();
+      sendMessage();
     });
 
     openingSequence();

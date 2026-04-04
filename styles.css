@@ -159,6 +159,11 @@ html, body {
   color: var(--dim);
 }
 
+#user-input:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
 #user-input:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -179,6 +184,11 @@ html, body {
 #send-btn:hover:not(:disabled) {
   color: var(--accent);
   border-color: var(--accent);
+}
+
+#send-btn:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
 }
 
 #send-btn:disabled {
