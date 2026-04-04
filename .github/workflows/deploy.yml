@@ -45,8 +45,8 @@ jobs:
 
           content = content.replace(placeholder, replacement, 1)
 
-          if 'GEMINI_API_KEY' in content:
-              raise SystemExit('GEMINI_API_KEY placeholder still present in dist/index.html after injection.')
+          if placeholder in content:
+              raise SystemExit(f'{placeholder} placeholder still present in dist/index.html after injection.')
 
           path.write_text(content, encoding='utf-8')
           PY
