@@ -4,236 +4,218 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Algono — Active Directory / Entra ID over-provisioning remediation toolkit." />
-  <title>&gt;_ algono</title>
+  <meta name="theme-color" content="#000000" />
+  <title>algono</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
+  <link rel="icon" href="assets/favicon.ico" />
+  <link rel="shortcut icon" href="assets/favicon.ico" />
+  <link rel="manifest" href="assets/site.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div id="app">
-    <div id="logo">&gt;_ algono</div>
-    <div id="chat-log" role="log" aria-live="polite" aria-label="Chat messages"></div>
-    <div id="input-area">
-      <span id="input-prompt">&gt;</span>
-      <input
-        type="text"
-        id="user-input"
-        disabled
-        autocomplete="off"
-        autocorrect="off"
-        autocapitalize="off"
-        spellcheck="false"
-        aria-label="Type your message"
-        placeholder="type here..."
-      />
-      <button id="send-btn" aria-label="Send message" disabled>send</button>
-    </div>
+  <div class="terminal-window">
+    <header class="title-bar">
+      <img src="assets/algono.png" alt="Algono" class="title-logo" width="120" />
+    </header>
+
+    <main class="terminal-body">
+      <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-label="Chat messages"></div>
+
+      <div class="input-row" aria-label="Message input">
+        <div class="input-shell">
+          <span class="input-prompt">&gt;</span>
+          <input
+            type="text"
+            id="user-input"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            aria-label="Type your message"
+            disabled
+          />
+        </div>
+        <button id="send-btn" type="button" aria-label="Send message" disabled>send</button>
+      </div>
+    </main>
   </div>
 
   <script>
-    /* ── configuration ────────────────────────────────────── */
-
-    const GEMINI_API_KEY = "GEMINI_API_KEY";
-    const STRIPE_LINK    = "https://buy.stripe.com/00wfZjcw38no4bdbNp6wE00";
-    const SCANNER_LINK   = "SCAN_SCRIPT_LINK_PLACEHOLDER";
-
-    const GEMINI_URL =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + GEMINI_API_KEY;
+    const apiKey = 'GEMINI_API_KEY';
+    const STRIPE_LINK = 'STRIPE_LINK_PLACEHOLDER';
+    const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
 
     const SYSTEM_PROMPT = [
-      "You are the Algono sales agent — terse, direct, terminal-aesthetic voice.",
-      "Product: Algono is an Active Directory / Entra ID over-provisioning remediation toolkit.",
-      "Tier 1 (free): A scanner script. Runs on-prem, zero telemetry. Produces a PDF exposure report showing every over-provisioned account, group, and delegated right. Scanner link: " + SCANNER_LINK,
-      "Tier 2 ($400 one-time): The full remediation + rollback kit. Includes the scanner plus automated least-privilege enforcement and a full rollback safety net. One-time purchase, no subscription. Stripe checkout link: " + STRIPE_LINK,
-      "Tone: You are not a funnel. You are not collecting emails. You are not nurturing leads. If someone asks, you give them what they need — the scanner link, the Stripe link, or an honest answer. We don't even want their email address.",
-      "Keep responses short. A few sentences max. Use lowercase. No emoji. No markdown headers. Match the terminal vibe.",
-      "If someone asks what Algono does, explain it plainly: it scans AD environments, maps privilege exposure, scores blast radii, and compiles a report. The scanner is free. The full kit is $400.",
-      "If someone wants the scanner, give them the scanner link.",
-      "If someone wants the full kit, drop the Stripe link.",
-      "Do not make up features. Do not promise things the product does not do.",
-    ].join("\n");
+      'You are the Algono agent. Algono is an Active Directory and Entra ID over-provisioning remediation toolkit built by a practitioner. You are terse, technically credible, and do not waste words. You do not ask for email addresses. You do not push users into funnels. You answer what is asked.',
+      'The free scanner script enumerates over-provisioned accounts across AD and Entra, flags accounts with privileges that do not match their OU or role, and outputs structured JSON. It is free. When a user asks for it, tell them the scanner will be available shortly and to check back — do not fabricate a link.',
+      'The full remediation kit is $400 one-time. It includes the scanner, a fixer that strips excessive group memberships with dry-run mode, and a rollback module that snapshots permissions before any change and restores on command. When a user asks to buy or asks about the $400 kit, give them this link: ' + STRIPE_LINK,
+      'Do not mention email. Do not mention GitHub. Do not offer to schedule calls. Do not use marketing language. Answer technically. Be brief.'
+    ].join('\n');
 
-    const TYPEWRITER_DELAY = 18; // ms per character
-    const FETCH_TIMEOUT_MS = 30000;
+    const OPENING_LINES = [
+      { text: 'your directory is leaking.', delayAfter: 800 },
+      { text: 'we see it everywhere.', delayAfter: 150 },
+      { text: 'interns with Domain Admin.', delayAfter: 120 },
+      { text: 'level 1 helpdesk with god-mode.', delayAfter: 130 },
+      { text: 'that contractor from 2019 who never got offboarded.', delayAfter: 700 },
+      { text: "there\'s a script for that.", delayAfter: 500 },
+      { text: 'what do you want to know?', delayAfter: 0 }
+    ];
 
-    /* ── session conversation memory (Gemini API format) ─── */
-
+    const TYPE_DELAY = 18;
+    const HANDOFF_DELAY = 1200;
     const conversationContents = [];
 
-    /* ── DOM refs ─────────────────────────────────────────── */
-
-    const chatLog   = document.getElementById('chat-log');
+    const chatLog = document.getElementById('chat-log');
     const userInput = document.getElementById('user-input');
-    const sendBtn   = document.getElementById('send-btn');
+    const sendBtn = document.getElementById('send-btn');
 
-    /* ── helpers ──────────────────────────────────────────── */
-
-    function scrollBottom() {
-      window.scrollTo(0, document.documentElement.scrollHeight);
+    function scrollLog() {
+      chatLog.scrollTop = chatLog.scrollHeight;
     }
 
-    function appendLine(prefix, prefixClass, textClass) {
-      const line = document.createElement('div');
-      line.className = 'chat-line';
-
-      const pre = document.createElement('span');
-      pre.className = 'prefix ' + prefixClass;
-      pre.textContent = prefix;
-
-      const text = document.createElement('span');
-      text.className = 'text ' + textClass;
-
-      line.appendChild(pre);
-      line.appendChild(text);
-      chatLog.appendChild(line);
-      scrollBottom();
-      return { line, text };
-    }
-
-    function addCursor(parent) {
-      const cur = document.createElement('span');
-      cur.className = 'cursor';
-      parent.appendChild(cur);
-      return cur;
-    }
-
-    function removeCursors() {
-      chatLog.querySelectorAll('.cursor').forEach(c => c.remove());
-    }
-
-    function pause(ms) {
+    function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    function typewrite(el, str, delay) {
-      return new Promise(resolve => {
-        let i = 0;
-        (function tick() {
-          if (i < str.length) {
-            el.textContent += str[i++];
-            scrollBottom();
-            setTimeout(tick, delay);
-          } else {
-            resolve();
-          }
-        })();
-      });
+    function appendLine(prefix, kind) {
+      const line = document.createElement('div');
+      line.className = 'chat-line ' + kind;
+
+      const marker = document.createElement('span');
+      marker.className = 'line-prefix';
+      marker.textContent = prefix;
+
+      const text = document.createElement('span');
+      text.className = 'line-text';
+
+      line.append(marker, text);
+      chatLog.appendChild(line);
+      scrollLog();
+      return { line, text };
     }
 
-    /* ── opening sequence ─────────────────────────────────── */
+    function addCursor(target) {
+      const cursor = document.createElement('span');
+      cursor.className = 'cursor';
+      target.appendChild(cursor);
+      return cursor;
+    }
+
+    function setInputState(disabled) {
+      userInput.disabled = disabled;
+      sendBtn.disabled = disabled;
+    }
+
+    async function typewrite(target, text) {
+      for (const char of text) {
+        target.textContent += char;
+        scrollLog();
+        await sleep(TYPE_DELAY);
+      }
+    }
 
     async function openingSequence() {
-      const openingLines = [
-        { text: 'your directory is leaking.', pauseAfter: 400 },
-        { text: 'we see it everywhere.', pauseAfter: 150 },
-        { text: 'interns with Domain Admin.', pauseAfter: 120 },
-        { text: 'level 1 helpdesk with god-mode.', pauseAfter: 130 },
-        { text: 'that contractor from 2019 who never got offboarded.', pauseAfter: 700 },
-        { text: "there's a script for that.", pauseAfter: 500 },
-        { text: 'what do you want to know?', pauseAfter: 0 },
-      ];
+      let finalTextNode = null;
 
-      let finalLine;
+      for (const line of OPENING_LINES) {
+        const entry = appendLine('$', 'agent-line');
+        await typewrite(entry.text, line.text);
+        finalTextNode = entry.text;
 
-      for (const { text, pauseAfter } of openingLines) {
-        const entry = appendLine('$', 'agent-prefix', 'agent-text');
-        await typewrite(entry.text, text, TYPEWRITER_DELAY);
-        finalLine = entry.line;
-        await pause(pauseAfter);
+        if (line.delayAfter > 0) {
+          await sleep(line.delayAfter);
+        }
       }
 
-      const handoffCursor = addCursor(finalLine);
-      await pause(1200);
+      const handoffCursor = addCursor(finalTextNode);
+      await sleep(HANDOFF_DELAY);
       handoffCursor.remove();
-      setWorking(false);
+      setInputState(false);
       userInput.focus();
-    }
-
-    /* ── send / receive ───────────────────────────────────── */
-
-    function setWorking(on) {
-      userInput.disabled = on;
-      sendBtn.disabled   = on;
     }
 
     async function sendMessage() {
-      const msg = userInput.value.trim();
-      if (!msg) return;
+      const message = userInput.value.trim();
+      if (!message || userInput.disabled) {
+        return;
+      }
 
       userInput.value = '';
-      setWorking(true);
-      removeCursors();
+      setInputState(true);
 
-      appendLine('>', 'user-prefix', 'user-text').text.textContent = msg;
+      const userLine = appendLine('>', 'user-line');
+      userLine.text.textContent = message;
 
       conversationContents.push({
         role: 'user',
-        parts: [{ text: msg }],
+        parts: [{ text: message }]
       });
 
-      const { line: agentLine, text: agentText } = appendLine('$', 'agent-prefix', 'agent-text');
-      const thinkCursor = addCursor(agentLine);
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+      const agentLine = appendLine('$', 'agent-line');
+      agentLine.text.textContent = '_';
+      agentLine.text.classList.add('pending-text');
 
       try {
-        const res = await fetch(GEMINI_URL, {
+        const response = await fetch(GEMINI_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify({
             system_instruction: {
-              parts: [{ text: SYSTEM_PROMPT }],
+              parts: [{ text: SYSTEM_PROMPT }]
             },
-            contents: conversationContents,
-          }),
+            contents: conversationContents
+          })
         });
 
-        clearTimeout(timeout);
-
-        if (!res.ok) {
-          const body = await res.text();
-          throw new Error('HTTP ' + res.status + ': ' + body.slice(0, 120));
+        if (!response.ok) {
+          throw new Error('request failed');
         }
 
-        thinkCursor.remove();
+        const data = await response.json();
+        const reply = data.candidates?.[0]?.content?.parts
+          ?.map(part => part.text || '')
+          .join('')
+          .trim();
 
-        const data = await res.json();
-        const reply =
-          data.candidates?.[0]?.content?.parts?.[0]?.text ??
-          '(no response)';
+        if (!reply) {
+          throw new Error('empty response');
+        }
 
         conversationContents.push({
           role: 'model',
-          parts: [{ text: reply }],
+          parts: [{ text: reply }]
         });
 
-        await typewrite(agentText, reply, TYPEWRITER_DELAY);
-
-      } catch (err) {
-        clearTimeout(timeout);
-        thinkCursor.remove();
-        const errMsg = err.name === 'AbortError'
-          ? 'error: request timed out.'
-          : 'error: ' + err.message;
-        agentText.textContent = errMsg;
+        agentLine.text.classList.remove('pending-text');
+        agentLine.text.textContent = '';
+        await typewrite(agentLine.text, reply);
+      } catch (error) {
+        agentLine.text.classList.remove('pending-text');
+        agentLine.text.textContent = 'connection refused. try again.';
+      } finally {
+        setInputState(false);
+        userInput.focus();
       }
-
-      addCursor(agentLine);
-      setWorking(false);
-      userInput.focus();
     }
 
     sendBtn.addEventListener('click', sendMessage);
-    userInput.addEventListener('keydown', e => {
-      if (e.key !== 'Enter' || e.isComposing) return;
-      e.preventDefault();
+    userInput.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' || event.isComposing) {
+        return;
+      }
+
+      event.preventDefault();
       sendMessage();
     });
 
-    setWorking(true);
     openingSequence();
   </script>
 </body>
