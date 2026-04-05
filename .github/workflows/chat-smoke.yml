@@ -188,17 +188,25 @@ jobs:
                }, { timeout: 5000 });
 
                await input.fill('what does algono do?');
-                await input.press('Enter');
+               await input.press('Enter');
 
-                await page.waitForFunction((failureReplies) => {
-                  const lastReply = Array
-                    .from(document.querySelectorAll('.agent-line .line-text'))
-                    .map(node => node.textContent.trim())
-                    .filter(Boolean)
-                    .at(-1);
+               await page.waitForFunction((failureReplies) => {
+                 const lastReply = Array
+                   .from(document.querySelectorAll('.agent-line .line-text'))
+                   .map(node => node.textContent.trim())
+                   .filter(Boolean)
+                   .at(-1);
 
-                  return (lastReply && lastReply !== '_') || failureReplies.includes(lastReply);
-                }, Array.from(failureReplies), { timeout: 45000 });
+                 if (!lastReply || lastReply === '_') {
+                   return false;
+                 }
+
+                 if (failureReplies.includes(lastReply)) {
+                   throw new Error(`Unexpected reply: ${lastReply}`);
+                 }
+
+                 return true;
+               }, Array.from(failureReplies), { timeout: 45000 });
 
                const reply = await page.evaluate(getLastAgentReply);
 
