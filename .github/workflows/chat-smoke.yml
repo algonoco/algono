@@ -149,7 +149,7 @@ jobs:
           SERVER_PID=$!
           trap 'kill $SERVER_PID' EXIT
           node <<'NODE'
-          const { chromium } = require('playwright');
+           const { chromium } = require('playwright');
 
           const failureReplies = new Set([
             'chat offline. key missing.',
@@ -171,40 +171,47 @@ jobs:
               .at(-1);
           }
 
-          (async () => {
-            const browser = await chromium.launch({ headless: true });
-            const page = await browser.newPage();
+           (async () => {
+             const browser = await chromium.launch({ headless: true });
 
-            await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
-            await page.getByText('what do you want to know?').waitFor({ timeout: 20000 });
+             try {
+               const page = await browser.newPage();
 
-            const input = page.getByLabel('Type your message');
-            await input.waitFor({ state: 'attached', timeout: 5000 });
-            await input.waitFor({ state: 'enabled', timeout: 5000 });
+               await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
+               await page.getByText('what do you want to know?').waitFor({ timeout: 20000 });
 
-            await input.fill('what does algono do?');
-            await input.press('Enter');
+               const input = page.getByLabel('Type your message');
+               await input.waitFor({ state: 'attached', timeout: 5000 });
+               await page.waitForFunction(() => {
+                 const field = document.getElementById('user-input');
+                 return field && !field.disabled;
+               }, { timeout: 5000 });
 
-            await page.waitForFunction(failures => {
-              const lastReply = Array
-                .from(document.querySelectorAll('.agent-line .line-text'))
-                .map(node => node.textContent.trim())
-                .filter(Boolean)
-                .at(-1);
+               await input.fill('what does algono do?');
+               await input.press('Enter');
 
-              return lastReply && lastReply !== '_' && !failures.includes(lastReply);
-            }, Array.from(failureReplies), { timeout: 45000 });
+               await page.waitForFunction(() => {
+                 const lastReply = Array
+                   .from(document.querySelectorAll('.agent-line .line-text'))
+                   .map(node => node.textContent.trim())
+                   .filter(Boolean)
+                   .at(-1);
 
-            const reply = await page.evaluate(getLastAgentReply);
+                 return lastReply && lastReply !== '_';
+               }, { timeout: 45000 });
 
-            if (!reply || failureReplies.has(reply)) {
-              throw new Error(`Unexpected reply: ${reply || '<empty>'}`);
-            }
+               const reply = await page.evaluate(getLastAgentReply);
 
-            console.log(`Gemini reply received (${reply.length} chars).`);
-            await browser.close();
-          })().catch(error => {
-            console.error(error);
-            process.exitCode = 1;
-          });
+               if (!reply || failureReplies.has(reply)) {
+                 throw new Error(`Unexpected reply: ${reply || '<empty>'}`);
+               }
+
+               console.log(`Gemini reply received (${reply.length} chars).`);
+             } finally {
+               await browser.close();
+             }
+           })().catch(error => {
+             console.error(error);
+             process.exitCode = 1;
+           });
           NODE
