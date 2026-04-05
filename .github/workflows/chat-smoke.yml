@@ -149,7 +149,7 @@ jobs:
           SERVER_PID=$!
           trap 'kill $SERVER_PID' EXIT
           node <<'NODE'
-           const { chromium } = require('playwright');
+          const { chromium } = require('playwright');
 
           const failureReplies = new Set([
             'chat offline. key missing.',
@@ -171,10 +171,10 @@ jobs:
               .at(-1);
           }
 
-           (async () => {
-             const browser = await chromium.launch({ headless: true });
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
 
-             try {
+            try {
                const page = await browser.newPage();
 
                await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
@@ -188,17 +188,17 @@ jobs:
                }, { timeout: 5000 });
 
                await input.fill('what does algono do?');
-               await input.press('Enter');
+                await input.press('Enter');
 
-               await page.waitForFunction(() => {
-                 const lastReply = Array
-                   .from(document.querySelectorAll('.agent-line .line-text'))
-                   .map(node => node.textContent.trim())
-                   .filter(Boolean)
-                   .at(-1);
+                await page.waitForFunction((failureReplies) => {
+                  const lastReply = Array
+                    .from(document.querySelectorAll('.agent-line .line-text'))
+                    .map(node => node.textContent.trim())
+                    .filter(Boolean)
+                    .at(-1);
 
-                 return lastReply && lastReply !== '_';
-               }, { timeout: 45000 });
+                  return (lastReply && lastReply !== '_') || failureReplies.includes(lastReply);
+                }, Array.from(failureReplies), { timeout: 45000 });
 
                const reply = await page.evaluate(getLastAgentReply);
 
