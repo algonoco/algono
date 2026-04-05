@@ -183,7 +183,7 @@ jobs:
                const input = page.getByLabel('Type your message');
                await input.waitFor({ state: 'attached', timeout: 5000 });
                await page.waitForFunction(() => {
-                 const field = document.getElementById('user-input');
+                 const field = document.querySelector('input[aria-label="Type your message"]');
                  return field && !field.disabled;
                }, { timeout: 5000 });
 
