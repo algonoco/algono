@@ -111,6 +111,7 @@
     }
 
     function isApiKeyConfigured() {
+      // Concatenated to avoid matching the deploy script placeholder search
       const placeholder = 'GEMINI_API' + '_KEY';
       const key = apiKey.trim();
       return key.length > 0 && key !== placeholder;
