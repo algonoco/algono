@@ -182,15 +182,13 @@ jobs:
 
                const input = page.getByLabel('Type your message');
                await input.waitFor({ state: 'attached', timeout: 5000 });
-               await page.waitForFunction(() => {
-                 const field = document.querySelector('input[aria-label="Type your message"]');
-                 return field && !field.disabled;
-               }, { timeout: 5000 });
+               const inputHandle = await input.elementHandle();
+               await page.waitForFunction(field => field && !field.disabled, inputHandle, { timeout: 5000 });
 
                await input.fill('what does algono do?');
                await input.press('Enter');
 
-               await page.waitForFunction((failureReplies) => {
+               await page.waitForFunction((knownFailures) => {
                  const lastReply = Array
                    .from(document.querySelectorAll('.agent-line .line-text'))
                    .map(node => node.textContent.trim())
@@ -201,7 +199,7 @@ jobs:
                    return false;
                  }
 
-                 if (failureReplies.includes(lastReply)) {
+                 if (knownFailures.includes(lastReply)) {
                    throw new Error(`Unexpected reply: ${lastReply}`);
                  }
 
