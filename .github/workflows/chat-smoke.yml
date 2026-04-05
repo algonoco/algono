@@ -173,38 +173,51 @@ jobs:
 
           (async () => {
             const browser = await chromium.launch({ headless: true });
-            const page = await browser.newPage();
 
-            await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
-            await page.getByText('what do you want to know?').waitFor({ timeout: 20000 });
+            try {
+               const page = await browser.newPage();
 
-            const input = page.getByLabel('Type your message');
-            await input.waitFor({ state: 'attached', timeout: 5000 });
-            await input.waitFor({ state: 'enabled', timeout: 5000 });
+               await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
+               await page.getByText('what do you want to know?').waitFor({ timeout: 20000 });
 
-            await input.fill('what does algono do?');
-            await input.press('Enter');
+               const input = page.getByLabel('Type your message');
+               await input.waitFor({ state: 'attached', timeout: 5000 });
+               const inputHandle = await input.elementHandle();
+               await page.waitForFunction(field => field && !field.disabled, inputHandle, { timeout: 5000 });
 
-            await page.waitForFunction(failures => {
-              const lastReply = Array
-                .from(document.querySelectorAll('.agent-line .line-text'))
-                .map(node => node.textContent.trim())
-                .filter(Boolean)
-                .at(-1);
+               await input.fill('what does algono do?');
+               await input.press('Enter');
 
-              return lastReply && lastReply !== '_' && !failures.includes(lastReply);
-            }, Array.from(failureReplies), { timeout: 45000 });
+               await page.waitForFunction((knownFailures) => {
+                 const lastReply = Array
+                   .from(document.querySelectorAll('.agent-line .line-text'))
+                   .map(node => node.textContent.trim())
+                   .filter(Boolean)
+                   .at(-1);
 
-            const reply = await page.evaluate(getLastAgentReply);
+                 if (!lastReply || lastReply === '_') {
+                   return false;
+                 }
 
-            if (!reply || failureReplies.has(reply)) {
-              throw new Error(`Unexpected reply: ${reply || '<empty>'}`);
-            }
+                 if (knownFailures.includes(lastReply)) {
+                   throw new Error(`Unexpected reply: ${lastReply}`);
+                 }
 
-            console.log(`Gemini reply received (${reply.length} chars).`);
-            await browser.close();
-          })().catch(error => {
-            console.error(error);
-            process.exitCode = 1;
-          });
+                 return true;
+               }, Array.from(failureReplies), { timeout: 45000 });
+
+               const reply = await page.evaluate(getLastAgentReply);
+
+               if (!reply || failureReplies.has(reply)) {
+                 throw new Error(`Unexpected reply: ${reply || '<empty>'}`);
+               }
+
+               console.log(`Gemini reply received (${reply.length} chars).`);
+             } finally {
+               await browser.close();
+             }
+           })().catch(error => {
+             console.error(error);
+             process.exitCode = 1;
+           });
           NODE
