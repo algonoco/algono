@@ -45,7 +45,7 @@
   <script>
     const apiKey = 'GEMINI_API_KEY';
     const STRIPE_LINK = 'STRIPE_LINK_PLACEHOLDER';
-    const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+    const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey.trim();
     const REQUEST_TIMEOUT_MS = 30000;
 
     const SYSTEM_PROMPT = [
@@ -111,7 +111,9 @@
     }
 
     function isApiKeyConfigured() {
-      return Boolean(apiKey) && apiKey.startsWith('AIza') && apiKey.length === 39;
+      const placeholder = 'GEMINI_API' + '_KEY';
+      const key = apiKey.trim();
+      return key.length > 0 && key !== placeholder;
     }
 
     async function readGeminiError(response) {
