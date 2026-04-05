@@ -55,7 +55,7 @@ jobs:
           }
 
           for placeholder, config in replacements.items():
-              secret_value = config['value']
+              secret_value = config['value'].strip().strip('"').strip("'")
               if not secret_value:
                   raise SystemExit(f"Missing required secret for {config['secret_name']}.")
 
