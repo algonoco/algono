@@ -231,6 +231,12 @@
       const handoffCursor = addCursor(finalTextNode);
       await sleep(HANDOFF_DELAY);
       handoffCursor.remove();
+
+      if (!isApiKeyConfigured()) {
+        appendLine('$', 'agent-line').text.textContent = 'chat offline. key missing.';
+        return;
+      }
+
       setInputState(false);
       userInput.focus();
     }
@@ -273,7 +279,9 @@
           conversationContents.pop();
         }
 
-        console.error('gemini request failed', error);
+        if (error?.code !== 'missing_api_key') {
+          console.error('gemini request failed', error);
+        }
         agentLine.text.classList.remove('pending-text');
         agentLine.text.textContent = error?.status
           ? getHttpErrorText(error.status)
