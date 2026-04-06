@@ -31,7 +31,6 @@ jobs:
       - name: Inject deploy-time placeholders
         env:
           STRIPE_LINK_SECRET: ${{ secrets.STRIPE_LINK }}
-          GEMINI_API_KEY_SECRET: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python - <<'PY'
           import json
@@ -45,11 +44,6 @@ jobs:
               "'STRIPE_LINK'": {
                   'secret_name': 'STRIPE_LINK',
                   'value': os.environ['STRIPE_LINK_SECRET'],
-                  'expected_occurrences': 1,
-              },
-              "'GEMINI_API_KEY'": {
-                  'secret_name': 'GEMINI_API_KEY',
-                  'value': os.environ['GEMINI_API_KEY_SECRET'],
                   'expected_occurrences': 1,
               },
           }
