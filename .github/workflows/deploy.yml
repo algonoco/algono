@@ -41,7 +41,7 @@ jobs:
           content = path.read_text(encoding='utf-8')
 
           replacements = {
-              "'STRIPE_LINK_PLACEHOLDER'": {
+              "'STRIPE_LINK'": {
                   'secret_name': 'STRIPE_LINK',
                   'value': os.environ['STRIPE_LINK_SECRET'],
                   'expected_occurrences': 1,
