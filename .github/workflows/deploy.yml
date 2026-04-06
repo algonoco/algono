@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Check out repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Assemble site artifact
         run: |
@@ -31,6 +31,7 @@ jobs:
       - name: Inject deploy-time placeholders
         env:
           STRIPE_LINK_SECRET: ${{ secrets.STRIPE_LINK }}
+          GEMINI_API_KEY_SECRET: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python - <<'PY'
           import json
@@ -46,6 +47,11 @@ jobs:
                   'value': os.environ['STRIPE_LINK_SECRET'],
                   'expected_occurrences': 1,
               },
+              "'GEMINI_API_KEY'": {
+                  'secret_name': 'GEMINI_API_KEY',
+                  'value': os.environ['GEMINI_API_KEY_SECRET'],
+                  'expected_occurrences': 1,
+              },
           }
 
           for placeholder, config in replacements.items():
@@ -56,13 +62,14 @@ jobs:
               occurrences = content.count(placeholder)
               if occurrences != config['expected_occurrences']:
                   raise SystemExit(
-                      f"Expected exactly {config['expected_occurrences']} occurrence(s) of {placeholder} in dist/index.html, found {occurrences}."
+                      f"Expected exactly {config['expected_occurrences']} occurrence(s) of "
+                      f"{placeholder} in dist/index.html, found {occurrences}."
                   )
 
               content = content.replace(placeholder, json.dumps(secret_value))
 
               if placeholder in content:
-                  raise SystemExit(f'{placeholder} placeholder still present in dist/index.html after injection.')
+                  raise SystemExit(f'{placeholder} still present after injection.')
 
           path.write_text(content, encoding='utf-8')
           PY
