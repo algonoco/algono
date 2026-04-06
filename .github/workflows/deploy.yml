@@ -30,7 +30,6 @@ jobs:
 
       - name: Inject deploy-time placeholders
         env:
-          GEMINI_API_KEY_SECRET: ${{ secrets.GEMINI_API_KEY }}
           STRIPE_LINK_SECRET: ${{ secrets.STRIPE_LINK }}
         run: |
           python - <<'PY'
