@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>algono — AD/Entra Identity Remediation</title>
+  <meta name="description" content="PowerShell toolkit for detecting and remediating over-privileged AD/Entra identities. Audit, fix, and roll back. $400, one-time.">
+
+  <!-- Preconnect for fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+
+  <!--
+  ═══════════════════════════════════════════════════
+  STRIPE CONFIGURATION
+  Replace BOTH values below before deployment.
+
+  STRIPE_PAYMENT_LINK:
+    Create a product in Stripe Dashboard → Payment Links
+    Set price to $400 one-time → copy the URL
+    Looks like: https://buy.stripe.com/XXXXXXXXXXXX
+
+  STRIPE_PUBLISHABLE_KEY (only needed if using embedded checkout):
+    Stripe Dashboard → Developers → API keys → Publishable key
+    Starts with: pk_live_XXXX  (or pk_test_XXXX for test mode)
+
+  Simplest deploy: just set STRIPE_PAYMENT_LINK and ignore the key.
+  ═══════════════════════════════════════════════════
+  -->
+  <script>
+    const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/REPLACE_WITH_YOUR_PAYMENT_LINK";
+    // const STRIPE_PUBLISHABLE_KEY = "pk_live_REPLACE_IF_USING_EMBEDDED_CHECKOUT";
+  </script>
+
+  <style>
+    /* ── Design Tokens ── */
+    :root {
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+
+      /* Type scale */
+      --text-xs:   clamp(0.75rem,  0.7rem  + 0.25vw, 0.875rem);
+      --text-sm:   clamp(0.875rem, 0.8rem  + 0.35vw, 1rem);
+      --text-base: clamp(1rem,     0.95rem + 0.25vw, 1.125rem);
+      --text-lg:   clamp(1.125rem, 1rem    + 0.75vw, 1.5rem);
+      --text-xl:   clamp(1.5rem,   1.2rem  + 1.25vw, 2.25rem);
+      --text-2xl:  clamp(2rem,     1.2rem  + 2.5vw,  3.5rem);
+
+      /* Spacing */
+      --space-1:  0.25rem;
+      --space-2:  0.5rem;
+      --space-3:  0.75rem;
+      --space-4:  1rem;
+      --space-5:  1.25rem;
+      --space-6:  1.5rem;
+      --space-8:  2rem;
+      --space-10: 2.5rem;
+      --space-12: 3rem;
+      --space-16: 4rem;
+      --space-20: 5rem;
+      --space-24: 6rem;
+
+      /* Radius */
+      --radius-sm: 2px;
+      --radius-md: 4px;
+
+      /* Transitions */
+      --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+
+      /* Content widths */
+      --content-narrow: 640px;
+      --content-default: 860px;
+    }
+
+    /* Dark-only palette — this tool lives in dark */
+    [data-theme="dark"], :root {
+      --color-bg:           #0d0d0b;
+      --color-surface:      #131310;
+      --color-surface-2:    #181815;
+      --color-border:       #252521;
+      --color-divider:      #1e1e1b;
+      --color-text:         #c8c7c2;
+      --color-text-muted:   #6b6a66;
+      --color-text-faint:   #3a3a36;
+      --color-accent:       #3dcc8e;   /* terminal green — earned, not decorative */
+      --color-accent-dim:   #1a4a35;
+      --color-accent-glow:  oklch(from #3dcc8e l c h / 0.12);
+      --color-warn:         #e8a84a;
+      --color-err:          #e85a5a;
+
+      --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.4);
+      --shadow-md: 0 4px 16px oklch(0 0 0 / 0.5);
+    }
+
+    /* ── Base Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      scroll-behavior: smooth;
+      scroll-padding-top: var(--space-16);
+    }
+    body {
+      min-height: 100dvh;
+      font-family: var(--font-mono);
+      font-size: var(--text-base);
+      line-height: 1.7;
+      color: var(--color-text);
+      background: var(--color-bg);
+    }
+    img, picture, video, canvas, svg { display: block; max-width: 100%; height: auto; }
+    button { cursor: pointer; background: none; border: none; font: inherit; color: inherit; }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, h4 { text-wrap: balance; line-height: 1.2; }
+    p, li { text-wrap: pretty; max-width: 68ch; }
+    ::selection { background: var(--color-accent-glow); color: var(--color-text); }
+    :focus-visible { outline: 1px solid var(--color-accent); outline-offset: 3px; border-radius: var(--radius-sm); }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* ── Layout ── */
+    .container {
+      max-width: var(--content-default);
+      margin-inline: auto;
+      padding-inline: clamp(var(--space-4), 4vw, var(--space-8));
+    }
+
+    /* ── Skip link ── */
+    .skip-link {
+      position: absolute; left: var(--space-4); top: var(--space-4);
+      padding: var(--space-2) var(--space-4);
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      font-size: var(--text-sm);
+      transform: translateY(-200%);
+      transition: transform var(--transition);
+    }
+    .skip-link:focus { transform: translateY(0); }
+
+    /* ── Nav ── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: var(--space-4) 0;
+      border-bottom: 1px solid var(--color-divider);
+      background: oklch(from var(--color-bg) l c h / 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: var(--color-text);
+      transition: opacity var(--transition);
+    }
+    .nav-logo:hover { opacity: 0.7; }
+    .nav-logo svg { flex-shrink: 0; }
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--text-xs);
+      font-family: var(--font-mono);
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      color: var(--color-bg);
+      background: var(--color-accent);
+      border-radius: var(--radius-sm);
+      transition: background var(--transition), transform var(--transition);
+      white-space: nowrap;
+    }
+    .nav-cta:hover { background: #4de8a0; }
+    .nav-cta:active { transform: scale(0.98); }
+
+    /* ── Hero ── */
+    .hero {
+      padding: clamp(var(--space-16), 10vw, var(--space-24)) 0
+               clamp(var(--space-12), 8vw, var(--space-20));
+      border-bottom: 1px solid var(--color-divider);
+    }
+    .hero-eyebrow {
+      font-size: var(--text-xs);
+      color: var(--color-accent);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: var(--space-5);
+    }
+    .hero-title {
+      font-size: var(--text-2xl);
+      font-weight: 700;
+      color: #e8e7e2;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: var(--space-6);
+    }
+    .hero-title .accent { color: var(--color-accent); }
+    .hero-sub {
+      font-size: var(--text-base);
+      color: var(--color-text-muted);
+      max-width: 56ch;
+      line-height: 1.7;
+      margin-bottom: var(--space-10);
+    }
+    .hero-sub strong { color: var(--color-text); font-weight: 500; }
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4) var(--space-8);
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--color-bg);
+      background: var(--color-accent);
+      border-radius: var(--radius-sm);
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+    }
+    .btn-primary:hover {
+      background: #4de8a0;
+      box-shadow: 0 0 24px oklch(from var(--color-accent) l c h / 0.25);
+    }
+    .btn-primary:active { transform: scale(0.98); }
+    .hero-price {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+    }
+    .hero-price strong { color: var(--color-text); font-weight: 600; }
+
+    /* ── Findings banner ── */
+    .findings-bar {
+      padding: var(--space-6) 0;
+      border-bottom: 1px solid var(--color-divider);
+      background: var(--color-surface);
+    }
+    .findings-inner {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+    }
+    .findings-prefix {
+      font-size: var(--text-xs);
+      color: var(--color-warn);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding-top: 2px;
+      white-space: nowrap;
+    }
+    .findings-code {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      line-height: 1.8;
+    }
+    .findings-code .hi { color: var(--color-err); }
+    .findings-code .ok { color: var(--color-accent); }
+
+    /* ── Section ── */
+    .section {
+      padding: clamp(var(--space-12), 8vw, var(--space-20)) 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+    .section-label {
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: var(--space-8);
+    }
+    .section-title {
+      font-size: var(--text-xl);
+      font-weight: 600;
+      color: #e8e7e2;
+      letter-spacing: -0.01em;
+      margin-bottom: var(--space-6);
+    }
+
+    /* ── What it fixes ── */
+    .findings-list {
+      list-style: none;
+      display: grid;
+      gap: var(--space-3);
+      margin-top: var(--space-8);
+    }
+    .findings-list li {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: baseline;
+      gap: var(--space-4);
+      padding: var(--space-4) 0;
+      border-bottom: 1px solid var(--color-divider);
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      max-width: none;
+    }
+    .findings-list li:last-child { border-bottom: none; }
+    .findings-list .finding-name { color: var(--color-text); font-weight: 500; }
+    .findings-list .finding-severity {
+      font-size: var(--text-xs);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .sev-crit { color: var(--color-err); }
+    .sev-high { color: var(--color-warn); }
+    .sev-med  { color: #a8c0ff; }
+
+    /* ── What you get ── */
+    .deliverables {
+      display: grid;
+      gap: var(--space-3);
+      margin-top: var(--space-8);
+    }
+    .deliverable {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-4);
+      padding: var(--space-5) var(--space-6);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+    }
+    .deliverable-marker {
+      font-size: var(--text-xs);
+      color: var(--color-accent);
+      padding-top: 3px;
+      flex-shrink: 0;
+      letter-spacing: 0.05em;
+    }
+    .deliverable-body { flex: 1; }
+    .deliverable-title {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: var(--space-1);
+    }
+    .deliverable-desc {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      line-height: 1.6;
+      max-width: 58ch;
+    }
+
+    /* ── Rollback demo ── */
+    .code-block {
+      margin-top: var(--space-8);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .code-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3) var(--space-5);
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface-2);
+    }
+    .code-block-title {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      letter-spacing: 0.05em;
+    }
+    .code-block-lang {
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+    }
+    .code-block pre {
+      padding: var(--space-5) var(--space-6);
+      font-size: var(--text-xs);
+      line-height: 2;
+      overflow-x: auto;
+      color: var(--color-text-muted);
+    }
+    .code-block pre .cmd   { color: #a8c0ff; }
+    .code-block pre .flag  { color: var(--color-text-muted); }
+    .code-block pre .out   { color: var(--color-text-faint); }
+    .code-block pre .good  { color: var(--color-accent); }
+    .code-block pre .warn  { color: var(--color-warn); }
+    .code-block pre .err   { color: var(--color-err); }
+    .code-block pre .cmt   { color: #3a3a36; }
+
+    /* ── Pricing ── */
+    .pricing-card {
+      margin-top: var(--space-8);
+      padding: var(--space-8) var(--space-8) var(--space-10);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      max-width: 480px;
+    }
+    .pricing-amount {
+      font-size: var(--text-2xl);
+      font-weight: 700;
+      color: #e8e7e2;
+      letter-spacing: -0.03em;
+      margin-bottom: var(--space-1);
+    }
+    .pricing-cadence {
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: var(--space-6);
+    }
+    .pricing-includes {
+      list-style: none;
+      display: grid;
+      gap: var(--space-3);
+      margin-bottom: var(--space-8);
+      padding-bottom: var(--space-8);
+      border-bottom: 1px solid var(--color-divider);
+    }
+    .pricing-includes li {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-3);
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      max-width: none;
+    }
+    .pricing-includes li::before {
+      content: '✓';
+      color: var(--color-accent);
+      font-size: var(--text-xs);
+      flex-shrink: 0;
+    }
+    .pricing-fine {
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+      line-height: 1.6;
+      margin-top: var(--space-4);
+    }
+
+    /* ── FAQ ── */
+    .faq-list {
+      display: grid;
+      gap: 0;
+      margin-top: var(--space-8);
+    }
+    .faq-item {
+      border-bottom: 1px solid var(--color-divider);
+    }
+    .faq-q {
+      width: 100%;
+      text-align: left;
+      padding: var(--space-5) 0;
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      cursor: pointer;
+      transition: color var(--transition);
+      border: none;
+      background: none;
+    }
+    .faq-q:hover { color: var(--color-accent); }
+    .faq-q-marker {
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+      transition: color var(--transition), transform var(--transition);
+      flex-shrink: 0;
+    }
+    .faq-item.open .faq-q-marker {
+      color: var(--color-accent);
+      transform: rotate(45deg);
+    }
+    .faq-a {
+      display: none;
+      padding-bottom: var(--space-5);
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      line-height: 1.75;
+      max-width: 62ch;
+    }
+    .faq-item.open .faq-a { display: block; }
+
+    /* ── Footer ── */
+    .footer {
+      padding: var(--space-8) 0 var(--space-12);
+      margin-top: var(--space-8);
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+    }
+    .footer-text {
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+      letter-spacing: 0.05em;
+    }
+    .footer-contact {
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+      transition: color var(--transition);
+    }
+    .footer-contact:hover { color: var(--color-text-muted); }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .hero-actions { flex-direction: column; align-items: flex-start; gap: var(--space-4); }
+      .findings-list li { grid-template-columns: 1fr; gap: var(--space-1); }
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+      .pricing-card { padding: var(--space-6); }
+      .code-block pre { font-size: 0.7rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <a href="#main" class="skip-link">Skip to content</a>
+
+  <!-- ── Nav ── -->
+  <nav class="nav" role="navigation" aria-label="Main">
+    <div class="container">
+      <div class="nav-inner">
+        <a href="/" class="nav-logo" aria-label="algono home">
+          <!-- >_ logo -->
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <rect x="1" y="1" width="20" height="20" rx="2" stroke="currentColor" stroke-width="1.2" opacity="0.4"/>
+            <polyline points="5,8 9,11 5,14" stroke="#3dcc8e" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="11.5" y1="14" x2="17" y2="14" stroke="#3dcc8e" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          algono
+        </a>
+        <a href="#buy" class="nav-cta" id="nav-buy-btn">
+          $ buy — $400
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+
+    <!-- ── Hero ── -->
+    <section class="hero">
+      <div class="container">
+        <p class="hero-eyebrow">// AD / Entra Identity Remediation</p>
+        <h1 class="hero-title">
+          Stop shipping<br>
+          <span class="accent">god-mode accounts</span><br>
+          to production.
+        </h1>
+        <p class="hero-sub">
+          Built because I was tired of seeing it.
+          <strong>Intern God-Mode</strong> — the pattern of over-privileged AD/Entra identities that accumulate through ticket-driven permission creep and onboarding laziness. This toolkit finds it, fixes it, and rolls back every write if something breaks.
+        </p>
+        <div class="hero-actions">
+          <a href="#buy" class="btn-primary" id="hero-buy-btn">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Get the toolkit — $400
+          </a>
+          <span class="hero-price"><strong>$400</strong> one-time · no subscription · no phone-home</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Sample findings ── -->
+    <div class="findings-bar">
+      <div class="container">
+        <div class="findings-inner">
+          <span class="findings-prefix">// scan</span>
+          <div class="findings-code">
+            <span class="hi">[ CRIT ]</span> svc_deploy — Domain Admin, last logon 847 days ago, no MFA, no owner<br>
+            <span class="hi">[ CRIT ]</span> intern_jsmith — Global Admin via nested group SALES_ALL → HELPDESK_TIER1 → DOMAIN_ADMINS<br>
+            <span class="warn">[ HIGH ]</span> app_reg_legacy — Graph API owner-level permissions, no expiry, no assigned owner<br>
+            <span class="warn">[ HIGH ]</span> 14 guest accounts with Directory.Read, onboarded &gt;180 days ago, no last sign-in record<br>
+            <span class="ok">[ INFO ]</span> Rollback manifest written to ./algono-rollback-2026-04-04T031200Z.json
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── What it targets ── -->
+    <section class="section" id="scope">
+      <div class="container">
+        <p class="section-label">// what it targets</p>
+        <h2 class="section-title">Six patterns. One toolkit.</h2>
+        <ul class="findings-list" role="list">
+          <li>
+            <div>
+              <div class="finding-name">Stale Domain Admin / Global Admin accounts</div>
+              No MFA, no recent logon, no documented owner — high blast radius
+            </div>
+            <span class="finding-severity sev-crit">Critical</span>
+          </li>
+          <li>
+            <div>
+              <div class="finding-name">Service accounts with interactive login rights</div>
+              Can log in interactively, often have password age &gt; 365 days
+            </div>
+            <span class="finding-severity sev-crit">Critical</span>
+          </li>
+          <li>
+            <div>
+              <div class="finding-name">Nested group privilege escalation paths</div>
+              Unprivileged group → nested into admin group → effective Domain Admin
+            </div>
+            <span class="finding-severity sev-high">High</span>
+          </li>
+          <li>
+            <div>
+              <div class="finding-name">Entra app registrations with owner-level Graph permissions</div>
+              AppRoles or delegated permissions at owner/admin scope, no expiry
+            </div>
+            <span class="finding-severity sev-high">High</span>
+          </li>
+          <li>
+            <div>
+              <div class="finding-name">Orphaned guest accounts with directory access</div>
+              Directory.Read or above, external identity, no recent sign-in
+            </div>
+            <span class="finding-severity sev-high">High</span>
+          </li>
+          <li>
+            <div>
+              <div class="finding-name">Managed identity over-scope</div>
+              Azure managed identities with Contributor or Owner at subscription scope
+            </div>
+            <span class="finding-severity sev-med">Medium</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ── What you get ── -->
+    <section class="section" id="deliverables">
+      <div class="container">
+        <p class="section-label">// what you get</p>
+        <h2 class="section-title">Scan, remediate, roll back.</h2>
+        <div class="deliverables">
+          <div class="deliverable">
+            <span class="deliverable-marker">[01]</span>
+            <div class="deliverable-body">
+              <div class="deliverable-title">Audit Script — read-only</div>
+              <div class="deliverable-desc">PowerShell. Connects to AD and Entra ID (Graph API). Produces a structured JSON findings report and a terminal summary. No writes. Safe to run in production.</div>
+            </div>
+          </div>
+          <div class="deliverable">
+            <span class="deliverable-marker">[02]</span>
+            <div class="deliverable-body">
+              <div class="deliverable-title">Remediation Script</div>
+              <div class="deliverable-desc">Applies fixes from the findings report. Every write operation is captured in a timestamped rollback manifest before execution. Supports dry-run mode. Scoped — only touches what the audit flagged.</div>
+            </div>
+          </div>
+          <div class="deliverable">
+            <span class="deliverable-marker">[03]</span>
+            <div class="deliverable-body">
+              <div class="deliverable-title">Rollback Script</div>
+              <div class="deliverable-desc">Reads the manifest. Undoes every write. Restores group memberships, account states, and permission scopes to pre-remediation state. If something breaks post-fix, you're one command out.</div>
+            </div>
+          </div>
+          <div class="deliverable">
+            <span class="deliverable-marker">[04]</span>
+            <div class="deliverable-body">
+              <div class="deliverable-title">Single-org perpetual license</div>
+              <div class="deliverable-desc">One tenant. No seats, no SaaS, no callbacks. Run it as many times as you need. Updates pushed to the private repo.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rollback demo -->
+        <div class="code-block" style="margin-top: var(--space-8);">
+          <div class="code-block-header">
+            <span class="code-block-title">rollback.ps1 — example session</span>
+            <span class="code-block-lang">PowerShell</span>
+          </div>
+          <pre role="img" aria-label="Example rollback session output"><span class="cmd">PS&gt;</span> <span class="flag">./algono-rollback.ps1</span> <span class="flag">-Manifest</span> <span class="flag">./algono-rollback-2026-04-04T031200Z.json</span>
+
+<span class="out">  Algono Rollback v1.x</span>
+<span class="out">  Manifest: 2026-04-04T03:12:00Z  |  14 operations</span>
+<span class="out">  ────────────────────────────────────────────────</span>
+
+<span class="warn">  [01/14]</span> <span class="out">Restoring svc_deploy → Domain Admins membership ... </span><span class="good">OK</span>
+<span class="warn">  [02/14]</span> <span class="out">Reverting intern_jsmith → group nesting path ....... </span><span class="good">OK</span>
+<span class="warn">  [03/14]</span> <span class="out">Re-enabling app_reg_legacy Graph role assignment .... </span><span class="good">OK</span>
+<span class="cmt">  [...]</span>
+<span class="warn">  [14/14]</span> <span class="out">Guest account restore complete ...................... </span><span class="good">OK</span>
+
+<span class="out">  ────────────────────────────────────────────────</span>
+<span class="good">  Rollback complete. 14/14 operations succeeded.</span>
+<span class="out">  Verify in ADUC / Entra admin portal before closing change ticket.</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Pricing / Buy ── -->
+    <section class="section" id="buy">
+      <div class="container">
+        <p class="section-label">// pricing</p>
+        <h2 class="section-title">One price. No games.</h2>
+        <div class="pricing-card">
+          <div class="pricing-amount">$400</div>
+          <div class="pricing-cadence">one-time · single org</div>
+          <ul class="pricing-includes" role="list">
+            <li>Audit script (read-only, safe to run now)</li>
+            <li>Remediation script with dry-run mode</li>
+            <li>Rollback script + JSON manifest format</li>
+            <li>Private GitHub repo invite post-payment</li>
+            <li>Perpetual license — one tenant, unlimited runs</li>
+            <li>Updates pushed to the repo</li>
+          </ul>
+          <a
+            href="#"
+            class="btn-primary"
+            id="main-buy-btn"
+            style="width: 100%; justify-content: center;"
+            aria-label="Buy Algono Remediation and Rollback Toolkit for $400"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            $ checkout — $400
+          </a>
+          <p class="pricing-fine">
+            Payment via Stripe. After payment you'll receive a GitHub repo invite at the email you use at checkout.
+            Questions: <a href="mailto:architect@algono.co" style="color: var(--color-text-muted);">architect@algono.co</a>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FAQ ── -->
+    <section class="section" id="faq">
+      <div class="container">
+        <p class="section-label">// faq</p>
+        <h2 class="section-title">Common questions.</h2>
+        <div class="faq-list" role="list">
+          <div class="faq-item" role="listitem">
+            <button class="faq-q" aria-expanded="false">
+              Does this require an agent or any persistent install?
+              <span class="faq-q-marker" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a">No agent. No persistent install. PowerShell scripts you run on-demand from a management workstation or jump host with appropriate AD/Graph API permissions. Nothing phones home.</div>
+          </div>
+          <div class="faq-item" role="listitem">
+            <button class="faq-q" aria-expanded="false">
+              What permissions does the audit script need?
+              <span class="faq-q-marker" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a">Read-only. For AD: standard domain user with read access to AD objects is sufficient for most checks; some group membership traversal requires ActiveDirectory module. For Entra/Graph: Directory.Read.All and Application.Read.All delegated permissions or a service principal with the same scope.</div>
+          </div>
+          <div class="faq-item" role="listitem">
+            <button class="faq-q" aria-expanded="false">
+              What does "single-org license" mean exactly?
+              <span class="faq-q-marker" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a">One Active Directory forest / one Entra ID tenant. Run it as many times as you want against that environment. If you need to use it across multiple client tenants (MSP scenario), contact architect@algono.co.</div>
+          </div>
+          <div class="faq-item" role="listitem">
+            <button class="faq-q" aria-expanded="false">
+              How is the rollback manifest structured?
+              <span class="faq-q-marker" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a">JSON flat file. Each entry records: operation type, target object (DN or Entra OID), attribute changed, prior value, new value, and a timestamp. Human-readable. You can inspect it before running rollback, or integrate it with your change management tooling.</div>
+          </div>
+          <div class="faq-item" role="listitem">
+            <button class="faq-q" aria-expanded="false">
+              Can I try it before buying?
+              <span class="faq-q-marker" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a">The free audit script is available on the public GitHub org. Open an issue to get the scan link — it reads your environment and gives you a real findings report. If you have a problem worth fixing, the full toolkit is $400.</div>
+          </div>
+          <div class="faq-item" role="listitem">
+            <button class="faq-q" aria-expanded="false">
+              When do I get access after payment?
+              <span class="faq-q-marker" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a">GitHub repo invite sent to your payment email within a few hours. If you don't see it, check spam or email architect@algono.co with your transaction ID.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Footer ── -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <p class="footer-text">algono &middot; identity remediation</p>
+        <a href="mailto:architect@algono.co" class="footer-contact">architect@algono.co</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ── JS: Stripe redirect + FAQ accordion ── -->
+  <script>
+    // ──────────────────────────────────────────────────────────────
+    // STRIPE CHECKOUT
+    // All buy buttons redirect to your Stripe Payment Link.
+    // Set STRIPE_PAYMENT_LINK at the top of this file.
+    // ──────────────────────────────────────────────────────────────
+    function goToCheckout(e) {
+      e.preventDefault();
+      const link = typeof STRIPE_PAYMENT_LINK !== 'undefined' && STRIPE_PAYMENT_LINK
+        ? STRIPE_PAYMENT_LINK
+        : null;
+
+      if (!link || link.includes('REPLACE_WITH_YOUR_PAYMENT_LINK')) {
+        // Dev fallback — alert instead of broken redirect
+        alert('[algono dev mode]\n\nSet STRIPE_PAYMENT_LINK in the <script> block at the top of this file.\n\nGet it from: Stripe Dashboard → Payment Links');
+        return;
+      }
+      window.location.href = link;
+    }
+
+    // Wire all buy buttons
+    ['nav-buy-btn', 'hero-buy-btn', 'main-buy-btn'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('click', goToCheckout);
+    });
+
+    // ──────────────────────────────────────────────────────────────
+    // FAQ ACCORDION
+    // ──────────────────────────────────────────────────────────────
+    document.querySelectorAll('.faq-q').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var item = btn.closest('.faq-item');
+        var isOpen = item.classList.contains('open');
+
+        // Close all
+        document.querySelectorAll('.faq-item.open').forEach(function(o) {
+          o.classList.remove('open');
+          o.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
+        });
+
+        // Toggle current
+        if (!isOpen) {
+          item.classList.add('open');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
