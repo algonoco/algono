@@ -207,6 +207,13 @@
       }
     }
 
+    function linkify(text) {
+      return text.replace(
+        /(https?:\/\/[^\s<>"']+)/g,
+        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+      );
+    }
+
     async function typewrite(target, text) {
       for (const char of text) {
         target.textContent += char;
@@ -239,12 +246,71 @@
 
       setInputState(false);
       userInput.focus();
+
+      showSuggestions();
+    }
+
+    function showSuggestions() {
+      const suggestions = [
+        { label: '$ how about a free scan?',      value: 'How do I get the free scan?' },
+        { label: '$ is this for real?',           value: 'Is this legit? Who built this?' },
+        { label: '$ i\'m sold. take my money.',   value: 'I want to buy the toolkit.' },
+      ];
+
+      const wrap = document.createElement('div');
+      wrap.id = 'suggestions';
+      wrap.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 16px 0 8px 0;
+      `;
+
+      suggestions.forEach(function(s) {
+        const btn = document.createElement('button');
+        btn.textContent = s.label;
+        btn.style.cssText = `
+          background: none;
+          border: 1px solid #252521;
+          color: #6b6a66;
+          font-family: inherit;
+          font-size: 0.8rem;
+          text-align: left;
+          padding: 8px 12px;
+          cursor: pointer;
+          border-radius: 2px;
+          transition: color 180ms, border-color 180ms;
+        `;
+        btn.addEventListener('mouseenter', function() {
+          btn.style.color = '#3dcc8e';
+          btn.style.borderColor = '#3dcc8e';
+        });
+        btn.addEventListener('mouseleave', function() {
+          btn.style.color = '#6b6a66';
+          btn.style.borderColor = '#252521';
+        });
+        btn.addEventListener('click', function() {
+          wrap.remove();
+          const input = document.getElementById('user-input');
+          input.value = s.value;
+          document.getElementById('send-btn').click();
+        });
+        wrap.appendChild(btn);
+      });
+
+      const inputRow = document.querySelector('.input-row');
+      inputRow.parentElement.insertBefore(wrap, inputRow);
     }
 
     async function sendMessage() {
       const message = userInput.value.trim();
       if (!message || userInput.disabled) {
         return;
+      }
+
+      const suggestions = document.getElementById('suggestions');
+      if (suggestions) {
+        suggestions.remove();
       }
 
       userInput.value = '';
@@ -274,6 +340,7 @@
         agentLine.text.classList.remove('pending-text');
         agentLine.text.textContent = '';
         await typewrite(agentLine.text, reply);
+        agentLine.text.innerHTML = linkify(agentLine.text.textContent);
       } catch (error) {
         if (conversationContents[conversationContents.length - 1] === userEntry) {
           conversationContents.pop();
