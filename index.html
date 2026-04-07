@@ -395,6 +395,37 @@
       font-size: var(--text-xs);
       color: var(--color-text-faint);
     }
+    .code-block-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .copy-btn {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.55rem;
+      color: var(--color-text-muted);
+      transition: color var(--transition), border-color var(--transition), background var(--transition);
+    }
+    .copy-btn:hover {
+      color: var(--color-accent);
+      border-color: var(--color-accent-dim);
+      background: oklch(from var(--color-accent) l c h / 0.08);
+    }
+    .code-link {
+      display: inline-flex;
+      margin-top: var(--space-3);
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+      text-decoration: underline;
+      text-decoration-color: var(--color-border);
+      text-underline-offset: 0.18em;
+      transition: color var(--transition), text-decoration-color var(--transition);
+    }
+    .code-link:hover {
+      color: var(--color-accent);
+      text-decoration-color: var(--color-accent);
+    }
     .code-block pre {
       padding: var(--space-5) var(--space-6);
       font-size: var(--text-xs);
@@ -591,11 +622,31 @@
             <div class="code-block" style="margin-top: var(--space-4); max-width: 700px;">
               <div class="code-block-header">
                 <span class="code-block-title">free audit — no sign-up</span>
-                <span class="code-block-lang">PowerShell</span>
+                <div class="code-block-actions">
+                  <span class="code-block-lang">PowerShell</span>
+                  <button
+                    type="button"
+                    class="copy-btn"
+                    id="copy-free-audit-btn"
+                    data-copy-text="iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 | iex"
+                    aria-label="Copy free audit command"
+                  >
+                    copy
+                  </button>
+                </div>
               </div>
               <pre role="img" aria-label="Free audit command"><span class="cmd">PS&gt;</span> iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 | iex</pre>
-              <pre role="img" aria-label="Alternative approach: comment and command to save script to disk first"><span class="cmt"># or save to disk first:</span>
-<span class="cmd">PS&gt;</span> iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 <span class="flag">-OutFile</span> Scan-EntraPrivilegedUsers.ps1</pre>
+              <a
+                href="https://github.com/algonoco/algono/blob/main/prontoso/Scan-EntraPrivilegedUsers.ps1"
+                class="code-link"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                open script in browser
+              </a>
+              <div style="margin-top: var(--space-3); color: var(--color-text-muted); font-size: var(--text-sm);">
+                Standalone by default. No local CSV or JSON sidecar files required.
+              </div>
             </div>
           </div>
         </div>
@@ -806,7 +857,7 @@
               Can I try it before buying?
               <span class="faq-q-marker" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a">The free audit script is a direct download. Run it now — no sign-up, no issue to open, no email required. <code>iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 | iex</code> — or save to disk first and inspect it. Read-only, no writes. If you have findings worth fixing, the toolkit is $400.</div>
+            <div class="faq-a">The free audit script is a direct download. Run it now — no sign-up, no issue to open, no email required, no local CSV or JSON files needed. <code>iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 | iex</code> — or save to disk first and inspect it. Read-only, no writes. If you have findings worth fixing, the toolkit is $400.</div>
           </div>
           <div class="faq-item" role="listitem">
             <button class="faq-q" aria-expanded="false">
@@ -857,6 +908,35 @@
       var el = document.getElementById(id);
       if (el) el.addEventListener('click', goToCheckout);
     });
+
+    // ──────────────────────────────────────────────────────────────
+    // COPY FREE AUDIT COMMAND
+    // ──────────────────────────────────────────────────────────────
+    (function() {
+      var copyBtn = document.getElementById('copy-free-audit-btn');
+      if (!copyBtn) return;
+
+      var defaultLabel = copyBtn.textContent.trim();
+
+      function setTemporaryLabel(label) {
+        copyBtn.textContent = label;
+        window.setTimeout(function() {
+          copyBtn.textContent = defaultLabel;
+        }, 1400);
+      }
+
+      copyBtn.addEventListener('click', async function() {
+        var text = copyBtn.getAttribute('data-copy-text');
+        if (!text) return;
+
+        try {
+          await navigator.clipboard.writeText(text);
+          setTemporaryLabel('copied');
+        } catch (err) {
+          setTemporaryLabel('copy failed');
+        }
+      });
+    })();
 
     // ──────────────────────────────────────────────────────────────
     // FAQ ACCORDION

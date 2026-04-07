@@ -26,6 +26,8 @@ Read-only. No writes. Safe to run in production now.
 iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 | iex
 ```
 
+Standalone by default: no local CSV or JSON sidecar files are required for the free scan.
+
 Or download directly:
 [`prontoso/Scan-EntraPrivilegedUsers.ps1`](prontoso/Scan-EntraPrivilegedUsers.ps1)
 

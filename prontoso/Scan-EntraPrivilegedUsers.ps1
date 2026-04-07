@@ -1,8 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$TenantIdOrDomain = 'algono.co',
-    [string]$OrgChartPath = '.\prontoso\PhonyOrgChartForSecurityAudit.csv',
-    [string]$ExceptionPath = '.\prontoso\PrivilegedAccessExceptions.json',
+    [string]$OrgChartPath,
+    [string]$ExceptionPath,
     [string]$OutputPath = '.\artifacts\entra-privileged-scan',
     [int]$InactiveDays = 45,
     [int]$NewAccountGraceDays = 14,
@@ -14,6 +14,23 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$commandPath = $null
+if ($MyInvocation.MyCommand) {
+    $pathProperty = $MyInvocation.MyCommand.PSObject.Properties['Path']
+    if ($pathProperty) {
+        $commandPath = [string]$pathProperty.Value
+    }
+}
+
+$script:InvocationDirectory = if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+    $PSScriptRoot
+}
+elseif (-not [string]::IsNullOrWhiteSpace($commandPath)) {
+    Split-Path -Path $commandPath -Parent
+}
+else {
+    $null
+}
 
 $RequiredScopes = @(
     'User.Read.All',
@@ -75,6 +92,31 @@ function Initialize-Directory {
     if (-not (Test-Path -LiteralPath $Path)) {
         New-Item -ItemType Directory -Path $Path -Force | Out-Null
     }
+}
+
+function Resolve-OptionalInputPath {
+    param(
+        [AllowNull()][string]$ProvidedPath,
+        [string[]]$AutoDetectPaths,
+        [string]$Label
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($ProvidedPath)) {
+        if (Test-Path -LiteralPath $ProvidedPath) {
+            return $ProvidedPath
+        }
+
+        Write-WarnLine ("Optional {0} file not found at {1}. Continuing without it." -f $Label, $ProvidedPath)
+        return $null
+    }
+
+    foreach ($candidatePath in @($AutoDetectPaths)) {
+        if (-not [string]::IsNullOrWhiteSpace($candidatePath) -and (Test-Path -LiteralPath $candidatePath)) {
+            return $candidatePath
+        }
+    }
+
+    return $null
 }
 
 function Get-NormalizedLookupKey {
@@ -357,8 +399,7 @@ function Get-LegacyRoleAssignments {
 function Import-OrgChart {
     param([string]$Path)
 
-    if (-not (Test-Path -LiteralPath $Path)) {
-        Write-WarnLine ("Org chart file not found at {0}. Department-based heuristics will rely on Entra fields only." -f $Path)
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path)) {
         return @{}
     }
 
@@ -373,8 +414,7 @@ function Import-OrgChart {
 function Import-Exceptions {
     param([string]$Path)
 
-    if (-not (Test-Path -LiteralPath $Path)) {
-        Write-WarnLine ("Exception file not found at {0}. All privilege exceptions will require review until you create it." -f $Path)
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path)) {
         return [pscustomobject]@{
             exceptions = @()
         }
@@ -749,14 +789,37 @@ function New-MarkdownSummary {
 
 Initialize-Directory -Path $OutputPath
 
+$orgChartAutoDetectPaths = @(
+    if ($script:InvocationDirectory) { Join-Path -Path $script:InvocationDirectory -ChildPath 'PhonyOrgChartForSecurityAudit.csv' }
+    if ($script:InvocationDirectory) { Join-Path -Path $script:InvocationDirectory -ChildPath 'prontoso\PhonyOrgChartForSecurityAudit.csv' }
+    '.\PhonyOrgChartForSecurityAudit.csv'
+    '.\prontoso\PhonyOrgChartForSecurityAudit.csv'
+)
+
+$exceptionAutoDetectPaths = @(
+    if ($script:InvocationDirectory) { Join-Path -Path $script:InvocationDirectory -ChildPath 'PrivilegedAccessExceptions.json' }
+    if ($script:InvocationDirectory) { Join-Path -Path $script:InvocationDirectory -ChildPath 'prontoso\PrivilegedAccessExceptions.json' }
+    '.\PrivilegedAccessExceptions.json'
+    '.\prontoso\PrivilegedAccessExceptions.json'
+)
+
+$resolvedOrgChartPath = Resolve-OptionalInputPath -ProvidedPath $OrgChartPath -AutoDetectPaths $orgChartAutoDetectPaths -Label 'org chart'
+$resolvedExceptionPath = Resolve-OptionalInputPath -ProvidedPath $ExceptionPath -AutoDetectPaths $exceptionAutoDetectPaths -Label 'exception'
+
 if ($ValidateOnly) {
-    Write-Info 'ValidateOnly mode enabled. Validating local file dependencies only.'
-    if (-not (Test-Path -LiteralPath $OrgChartPath)) {
-        Write-WarnLine ("Org chart missing: {0}" -f $OrgChartPath)
+    Write-Info 'ValidateOnly mode enabled. Checking scan prerequisites.'
+    if ($resolvedOrgChartPath) {
+        Write-Info ("Optional org chart data detected at {0}" -f $resolvedOrgChartPath)
+    }
+    else {
+        Write-Info 'No optional org chart data detected. Department heuristics will use Entra fields only.'
     }
 
-    if (-not (Test-Path -LiteralPath $ExceptionPath)) {
-        Write-WarnLine ("Exception file missing: {0}" -f $ExceptionPath)
+    if ($resolvedExceptionPath) {
+        Write-Info ("Optional exception list detected at {0}" -f $resolvedExceptionPath)
+    }
+    else {
+        Write-Info 'No optional exception list detected. The free scan will mark all privilege exceptions for review.'
     }
 
     Write-Info 'Validation complete.'
@@ -765,8 +828,15 @@ if ($ValidateOnly) {
 
 Initialize-GraphConnection
 
-$orgChart = Import-OrgChart -Path $OrgChartPath
-$exceptions = Import-Exceptions -Path $ExceptionPath
+$orgChart = Import-OrgChart -Path $resolvedOrgChartPath
+$exceptions = Import-Exceptions -Path $resolvedExceptionPath
+if ($resolvedOrgChartPath) {
+    Write-Info ("Using optional org chart data from {0}" -f $resolvedOrgChartPath)
+}
+
+if ($resolvedExceptionPath) {
+    Write-Info ("Using optional exception list from {0}" -f $resolvedExceptionPath)
+}
 $roleDefinitions = Get-RoleDefinitions
 $roleLookup = @{}
 foreach ($roleDefinition in $roleDefinitions) {
