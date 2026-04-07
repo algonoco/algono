@@ -1,0 +1,4 @@
+RuleId,Enabled,Mode,Action,FindingId,UserPrincipalName,DisplayName,RoleDisplayName,AssignmentState,SourceGroupName,AccessPath,DirectoryScopeId,SeverityFloor,Reason,ApprovedBy,TicketId,ExpiresOn
+RULE-0001,true,Allow,Keep,finding-58d8dc4e822f3477215ed2d13a65a4ae084e8610879d74eab5b55155fc1fd3e0,todd@algono.co,Todd Packer,Global Administrator,Active,,Direct,/,Medium,Legacy system dependency. Approved until the replacement project closes.,lmw@algono.co,,2026-06-30T23:59:59Z
+RULE-1001,false,Deny,Remove,,toby.flenderson@algono.co,Toby Flenderson,User Administrator,Active,,Direct,/,High,Example deny rule to remove a direct privileged assignment when approved for enforcement.,lmw@algono.co,EXAMPLE-REMOVE,
+RULE-1002,false,Deny,Disable,,evelyn.thorne@algono.co,Evelyn Thorne,Global Administrator,Active,,Direct,/,High,Example deny rule to remove privilege and disable the account during remediation.,lmw@algono.co,EXAMPLE-DISABLE,

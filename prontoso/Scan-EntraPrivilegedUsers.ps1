@@ -498,6 +498,31 @@ function Get-SeverityFromScore {
     return 'Low'
 }
 
+function Get-StableFindingId {
+    param([string[]]$Parts)
+
+    $normalized = (($Parts | ForEach-Object {
+                if ([string]::IsNullOrWhiteSpace([string]$_)) {
+                    '<null>'
+                }
+                else {
+                    ([string]$_).Trim().ToLowerInvariant()
+                }
+            }) -join '|')
+
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($normalized)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hashBytes = $sha256.ComputeHash($bytes)
+    }
+    finally {
+        $sha256.Dispose()
+    }
+
+    $hashText = -join ($hashBytes | ForEach-Object { $_.ToString('x2') })
+    return "finding-$hashText"
+}
+
 function New-FindingRecord {
     param(
         [object]$User,
@@ -592,6 +617,16 @@ function New-FindingRecord {
     }
 
     $record = [pscustomobject]@{
+        FindingId = Get-StableFindingId -Parts @(
+            $User.id,
+            $User.userPrincipalName,
+            $Role.id,
+            $Assignment.AssignmentState,
+            $AccessPath,
+            $SourceGroupId,
+            $Assignment.directoryScopeId,
+            (Get-OptionalPropertyValue -Object $Assignment -PropertyName 'LegacyRoleId')
+        )
         UserId = $User.id
         DisplayName = $User.displayName
         UserPrincipalName = $User.userPrincipalName
