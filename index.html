@@ -44,16 +44,8 @@
 
   <script>
     
-    const STRIPE_LINK = 'STRIPE_LINK';
     const GEMINI_URL = 'https://algono-gemini-proxy.hofwar.workers.dev';
     const REQUEST_TIMEOUT_MS = 30000;
-
-    const SYSTEM_PROMPT = [
-      'You are the Algono agent. Algono is an Active Directory and Entra ID over-provisioning remediation toolkit built by a practitioner. You are terse, technically credible, and do not waste words. You do not ask for email addresses. You do not push users into funnels. You answer what is asked.',
-      'The free scanner script enumerates over-provisioned accounts across AD and Entra, flags accounts with privileges that do not match their OU or role, and outputs structured JSON. It is free. When a user asks for it, tell them the scanner will be available shortly and to check back — do not fabricate a link.',
-      'The full remediation kit is $400 one-time. It includes the scanner, a fixer that strips excessive group memberships with dry-run mode, and a rollback module that snapshots permissions before any change and restores on command. When a user asks to buy or asks about the $400 kit, give them this link: ' + STRIPE_LINK,
-      'Do not mention email. Do not mention GitHub. Do not offer to schedule calls. Do not use marketing language. Answer technically. Be brief.'
-    ].join('\n');
 
     const OPENING_LINES = [
       { text: 'your directory is leaking.', delayAfter: 800 },
@@ -110,10 +102,6 @@
       sendBtn.disabled = disabled;
     }
 
-    function isApiKeyConfigured() {
-      return true;
-    }
-
     async function readGeminiError(response) {
       try {
         const data = await response.json();
@@ -160,12 +148,6 @@
     }
 
     async function requestGeminiReply() {
-      if (!isApiKeyConfigured()) {
-        const error = new Error('Gemini API key is missing.');
-        error.code = 'missing_api_key';
-        throw error;
-      }
-
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -177,9 +159,6 @@
           },
           signal: controller.signal,
           body: JSON.stringify({
-            system_instruction: {
-              parts: [{ text: SYSTEM_PROMPT }]
-            },
             contents: conversationContents
           })
         });
@@ -238,11 +217,6 @@
       const handoffCursor = addCursor(finalTextNode);
       await sleep(HANDOFF_DELAY);
       handoffCursor.remove();
-
-      if (!isApiKeyConfigured()) {
-        appendLine('$', 'agent-line').text.textContent = 'chat offline. key missing.';
-        return;
-      }
 
       setInputState(false);
       userInput.focus();
