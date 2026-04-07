@@ -1,0 +1,108 @@
+{
+  "users": {
+    "defaults": {
+      "companyName": "Algono",
+      "usageLocation": "US"
+    },
+    "overrides": [
+      {
+        "displayName": "Creed Bratton",
+        "accountEnabled": false
+      }
+    ],
+    "extras": [
+      {
+        "displayName": "Todd Packer",
+        "givenName": "Todd",
+        "surname": "Packer",
+        "alias": "todd",
+        "jobTitle": "Accounting Systems Custodian",
+        "department": "Accounting",
+        "accountEnabled": true
+      }
+    ]
+  },
+  "administrativeUnits": [
+    {
+      "key": "Executive_Floor",
+      "displayName": "Prontoso Executive Floor",
+      "description": "Seeded administrative unit for executive staff."
+    },
+    {
+      "key": "IT_Operations",
+      "displayName": "Prontoso IT Operations",
+      "description": "Seeded administrative unit for operations staff."
+    },
+    {
+      "key": "HR_Admin",
+      "displayName": "Prontoso HR Admin",
+      "description": "Seeded administrative unit for HR staff."
+    },
+    {
+      "key": "Service_Desk",
+      "displayName": "Prontoso Service Desk",
+      "description": "Seeded administrative unit for service desk staff."
+    }
+  ],
+  "groups": [
+    {
+      "key": "PrivilegedHelpdesk",
+      "displayName": "Prontoso Privileged Helpdesk",
+      "description": "Role-assignable helpdesk administrators.",
+      "isAssignableToRole": true,
+      "members": [
+        "kelly.kapoor",
+        "gabe.lewis",
+        "ryan.howard"
+      ]
+    },
+    {
+      "key": "LegacyIdentity",
+      "displayName": "Prontoso Legacy Identity Admins",
+      "description": "Legacy admin path used to model exception handling and forgotten access.",
+      "isAssignableToRole": true,
+      "members": [
+        "creed.bratton",
+        "todd"
+      ]
+    }
+  ],
+  "roleAssignments": [
+    {
+      "principalType": "User",
+      "principal": "evelyn.thorne",
+      "roleDisplayName": "Global Administrator",
+      "directoryScopeId": "/"
+    },
+    {
+      "principalType": "User",
+      "principal": "todd",
+      "roleDisplayName": "Global Administrator",
+      "directoryScopeId": "/"
+    },
+    {
+      "principalType": "Group",
+      "principal": "PrivilegedHelpdesk",
+      "roleDisplayName": "Helpdesk Administrator",
+      "directoryScopeId": "/"
+    },
+    {
+      "principalType": "Group",
+      "principal": "LegacyIdentity",
+      "roleDisplayName": "Authentication Administrator",
+      "directoryScopeId": "/"
+    },
+    {
+      "principalType": "User",
+      "principal": "kelly.kapoor",
+      "roleDisplayName": "User Administrator",
+      "administrativeUnitKey": "Service_Desk"
+    },
+    {
+      "principalType": "User",
+      "principal": "toby.flenderson",
+      "roleDisplayName": "User Administrator",
+      "directoryScopeId": "/"
+    }
+  ]
+}

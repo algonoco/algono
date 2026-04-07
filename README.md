@@ -25,3 +25,14 @@ Don't want to run it yourself? [Book the $400 managed audit](https://algono.co/#
 - Website: static HTML + CSS (terminal-themed, zero dependencies)
 - PDF report: [Typst](https://typst.app/) — compiled from source, mathematically precise typography
 - License: MIT
+
+## Scanner scaffold
+
+The initial scanner scaffold now lives under [`src/`](src) with the architecture note in [`docs/scanner-architecture.md`](docs/scanner-architecture.md).
+
+Current state:
+
+- .NET solution with a CLI entrypoint and core library
+- sample inventory collector wired end to end
+- heuristic analyzer that emits findings and exposure scores
+- JSON + Markdown artifact emitter as the placeholder report backend

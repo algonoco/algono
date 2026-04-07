@@ -1,0 +1,14 @@
+{
+  "exceptions": [
+    {
+      "match": {
+        "userPrincipalName": "todd@algono.co",
+        "roleDisplayName": "Global Administrator",
+        "assignmentState": "Active"
+      },
+      "reason": "Legacy system dependency. Approved until the replacement project closes.",
+      "approvedBy": "lmw@algono.co",
+      "expiresOn": "2026-06-30T23:59:59Z"
+    }
+  ]
+}

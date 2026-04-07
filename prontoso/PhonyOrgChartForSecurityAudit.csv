@@ -1,0 +1,21 @@
+Name,Job Title,AU / Department,Reports To
+Evelyn Thorne,Chief Executive Officer,Executive_Floor,(Board)
+Marcus Vane,Chief Technology Officer,Executive_Floor,Evelyn Thorne
+Sarah Jenkins,Chief Information Security Officer,Executive_Floor,Evelyn Thorne
+David Chen,VP of Operations,IT_Operations,Marcus Vane
+Elena Rodriguez,Director of Infrastructure,IT_Operations,David Chen
+Michael Scott,IT Manager,IT_Operations,Elena Rodriguez
+Jim Halpert,Senior Systems Architect,IT_Operations,Michael Scott
+Pam Beesly,IT Procurement Specialist,IT_Operations,Michael Scott
+Dwight Schrute,Lead Security Analyst,IT_Operations,Sarah Jenkins
+Angela Martin,Compliance Officer,IT_Operations,Sarah Jenkins
+Kevin Malone,Senior Network Engineer,IT_Operations,Elena Rodriguez
+Oscar Martinez,Systems Admin (L2),IT_Operations,Michael Scott
+Toby Flenderson,HR Systems Admin,HR_Admin,Evelyn Thorne
+Kelly Kapoor,Service Desk Lead (L2),Service_Desk,Michael Scott
+Ryan Howard,Junior Service Desk (L1),Service_Desk,Kelly Kapoor
+Stanley Hudson,Junior Service Desk (L1),Service_Desk,Kelly Kapoor
+Phyllis Vance,Junior Service Desk (L1),Service_Desk,Kelly Kapoor
+Creed Bratton,"""Quality Assurance"" (Legacy)",Service_Desk,(None/Unknown)
+Meredith Palmer,Junior Service Desk (L1),Service_Desk,Kelly Kapoor
+Gabe Lewis,Service Desk (L1),Service_Desk,Kelly Kapoor

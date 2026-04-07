@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Algono Identity Entropy Audit</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --black: #000000;
+            --white: #ffffff;
+            --grey: #f4f4f4;
+            --dark-grey: #333333;
+            --alert: #cc0000;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--white);
+            color: var(--black);
+            line-height: 1.5;
+            margin: 0;
+            padding: 40px;
+            font-size: 12px;
+        }
+        @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+            .page-break { page-break-before: always; }
+        }
+        header {
+            border-bottom: 2px solid var(--black);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        .logo { font-size: 24px; font-weight: 700; }
+        .report-type { text-transform: uppercase; letter-spacing: 0.1em; color: var(--dark-grey); }
+        
+        .executive-summary { margin-bottom: 40px; }
+        .executive-summary h1 { font-size: 18px; text-decoration: underline; margin-bottom: 15px; }
+        
+        .entropy-score {
+            border: 1px solid var(--black);
+            padding: 20px;
+            margin-bottom: 40px;
+            display: flex;
+            gap: 40px;
+        }
+        .score-box { text-align: center; }
+        .score-val { font-size: 32px; font-weight: 700; display: block; }
+        .score-label { font-size: 10px; text-transform: uppercase; color: var(--dark-grey); }
+
+        .critical-finding {
+            color: var(--alert);
+            border-left: 4px solid var(--alert);
+            padding-left: 15px;
+            margin-bottom: 20px;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; background: var(--grey); border: 1px solid var(--black); padding: 8px; font-size: 10px; text-transform: uppercase; }
+        td { border: 1px solid var(--black); padding: 8px; vertical-align: top; }
+        
+        .footer {
+            margin-top: 60px;
+            border-top: 1px solid var(--black);
+            padding-top: 20px;
+            text-align: center;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">ALGONO</div>
+        <div class="report-type">Identity Entropy Audit</div>
+    </header>
+
+    <section class="executive-summary">
+        <h1>Executive Summary</h1>
+        <p>This audit identifies structural permission drift and over-provisioned administrative accounts within the environment. Left unaddressed, these accounts represent immediate vectors for lateral movement and ransomware deployment.</p>
+        
+        <div class="critical-finding">
+            <strong>CRITICAL: "Intern God-Mode" Detected.</strong> 
+            Non-permanent or junior staff accounts identified with active Global Administrator or Domain Administrator privileges.
+        </div>
+    </section>
+
+    <div class="entropy-score">
+        <div class="score-box">
+            <span class="score-val">14</span>
+            <span class="score-label">Over-Provisioned Admins</span>
+        </div>
+        <div class="score-box">
+            <span class="score-val">High</span>
+            <span class="score-label">Risk Rating</span>
+        </div>
+    </div>
+
+    <section class="findings">
+        <h1>Detailed Findings</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Account (UPN)</th>
+                    <th>Job Title</th>
+                    <th>Current Privilege Level</th>
+                    <th>Risk Factor</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>jsmith_intern@corp.com</td>
+                    <td>IT Intern</td>
+                    <td>Domain Admin (Recursive)</td>
+                    <td>Critical</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <div class="footer">
+        Algono Identity Remediation // architect@algono.co // https://algono.co
+    </div>
+</body>
+</html>
