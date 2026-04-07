@@ -81,7 +81,7 @@ function Write-WarnLine {
     Write-Warning $Message
 }
 
-function Ensure-Directory {
+function Initialize-Directory {
     param([string]$Path)
 
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -89,12 +89,12 @@ function Ensure-Directory {
     }
 }
 
-function Ensure-ParentDirectory {
+function Initialize-ParentDirectory {
     param([string]$Path)
 
     $parent = Split-Path -Path $Path -Parent
     if (-not [string]::IsNullOrWhiteSpace($parent)) {
-        Ensure-Directory -Path $parent
+        Initialize-Directory -Path $parent
     }
 }
 
@@ -104,7 +104,7 @@ function Write-FileUtf8 {
         [string]$Content
     )
 
-    Ensure-ParentDirectory -Path $Path
+    Initialize-ParentDirectory -Path $Path
     $encoding = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($Path, $Content, $encoding)
 }
@@ -195,7 +195,7 @@ function Get-StableFindingId {
     return "finding-$hashText"
 }
 
-function Ensure-FindingShape {
+function Initialize-FindingShape {
     param([object[]]$Findings)
 
     $normalized = New-Object System.Collections.Generic.List[object]
@@ -233,7 +233,7 @@ function Get-RuleTemplateCsvContent {
     return ($RuleExportColumns -join ',')
 }
 
-function Ensure-RulesCsvTemplate {
+function Initialize-RulesCsvTemplate {
     param([string]$Path)
 
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -771,7 +771,7 @@ function Import-ActiveRules {
             $rules = @(Import-NormalizedRulesFromJson -Path $RulesJson)
         }
         default {
-            Ensure-RulesCsvTemplate -Path $InteractiveRulesCsvPath
+            Initialize-RulesCsvTemplate -Path $InteractiveRulesCsvPath
             $rules = @(Import-NormalizedRulesFromCsv -Path $InteractiveRulesCsvPath)
         }
     }
@@ -961,7 +961,7 @@ function Invoke-OnlineValidation {
         [object]$RollbackManifest
     )
 
-    Ensure-GraphConnection -Scopes $ValidationScopes -SkipWhenValidateOnly
+    Initialize-GraphConnection -Scopes $ValidationScopes -SkipWhenValidateOnly
 
     $validationIssues = New-Object System.Collections.Generic.List[string]
     $seenUsers = @{}
@@ -1036,7 +1036,7 @@ function Get-GraphContextStatus {
     }
 }
 
-function Ensure-GraphConnection {
+function Initialize-GraphConnection {
     param(
         [string[]]$Scopes = $RequiredScopes,
         [switch]$SkipWhenValidateOnly
@@ -1261,7 +1261,7 @@ function Restore-UserAccount {
     return 'WhatIf'
 }
 
-Ensure-Directory -Path $OutputPath
+Initialize-Directory -Path $OutputPath
 
 if ($ValidateOnly) {
     if ($RollbackManifestPath) {
@@ -1284,7 +1284,7 @@ if ($ValidateOnly) {
         }
 
         $validatedFindings = @(Get-Content -LiteralPath $FindingsPath -Raw | ConvertFrom-Json -Depth 12)
-        $validatedFindings = @(Ensure-FindingShape -Findings $validatedFindings)
+        $validatedFindings = @(Initialize-FindingShape -Findings $validatedFindings)
         $ruleState = Import-ActiveRules
         Write-NormalizedRulesJson -Path $ruleState.NormalizedPath -Rules $ruleState.Rules
 
@@ -1299,7 +1299,7 @@ if ($ValidateOnly) {
     }
 }
 
-Ensure-GraphConnection
+Initialize-GraphConnection
 
 if ($RollbackManifestPath) {
     $manifest = Get-Content -LiteralPath $RollbackManifestPath -Raw | ConvertFrom-Json -Depth 12
@@ -1423,7 +1423,7 @@ if (-not (Test-Path -LiteralPath $FindingsPath)) {
 }
 
 $findings = @(Get-Content -LiteralPath $FindingsPath -Raw | ConvertFrom-Json -Depth 12)
-$findings = @(Ensure-FindingShape -Findings $findings)
+$findings = @(Initialize-FindingShape -Findings $findings)
 $minimumRank = $SeverityRank[$MinimumSeverity]
 
 $ruleState = Import-ActiveRules

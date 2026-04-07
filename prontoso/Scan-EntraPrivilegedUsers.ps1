@@ -69,7 +69,7 @@ function Get-DateOrNull {
     return [DateTimeOffset]::Parse([string]$Value)
 }
 
-function Ensure-Directory {
+function Initialize-Directory {
     param([string]$Path)
 
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -126,7 +126,7 @@ function Get-GraphContextStatus {
     }
 }
 
-function Ensure-GraphConnection {
+function Initialize-GraphConnection {
     if ($ValidateOnly) {
         Write-Info 'ValidateOnly set. Skipping Graph authentication.'
         return
@@ -201,7 +201,7 @@ function Invoke-GraphCollection {
     return $results.ToArray()
 }
 
-function Try-GetUsers {
+function Get-UsersWithFallback {
     $baseSelect = 'id,displayName,userPrincipalName,accountEnabled,createdDateTime,userType,department,jobTitle,employeeId,companyName,onPremisesSyncEnabled'
     $candidates = @(
         [pscustomobject]@{
@@ -354,7 +354,7 @@ function Get-LegacyRoleAssignments {
     return $items.ToArray()
 }
 
-function Load-OrgChart {
+function Import-OrgChart {
     param([string]$Path)
 
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -370,7 +370,7 @@ function Load-OrgChart {
     return $map
 }
 
-function Load-Exceptions {
+function Import-Exceptions {
     param([string]$Path)
 
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -747,7 +747,7 @@ function New-MarkdownSummary {
     return ($lines -join [Environment]::NewLine)
 }
 
-Ensure-Directory -Path $OutputPath
+Initialize-Directory -Path $OutputPath
 
 if ($ValidateOnly) {
     Write-Info 'ValidateOnly mode enabled. Validating local file dependencies only.'
@@ -763,10 +763,10 @@ if ($ValidateOnly) {
     return
 }
 
-Ensure-GraphConnection
+Initialize-GraphConnection
 
-$orgChart = Load-OrgChart -Path $OrgChartPath
-$exceptions = Load-Exceptions -Path $ExceptionPath
+$orgChart = Import-OrgChart -Path $OrgChartPath
+$exceptions = Import-Exceptions -Path $ExceptionPath
 $roleDefinitions = Get-RoleDefinitions
 $roleLookup = @{}
 foreach ($roleDefinition in $roleDefinitions) {
@@ -781,7 +781,7 @@ else {
     @()
 }
 
-$userCollection = Try-GetUsers
+$userCollection = Get-UsersWithFallback
 $userLookup = @{}
 foreach ($user in $userCollection.Users) {
     $userLookup[$user.id] = $user
