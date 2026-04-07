@@ -28,6 +28,8 @@ $SeverityRank = @{
     Critical = 4
 }
 
+$CurrentActorUpn = $null
+
 function Write-Info {
     param([string]$Message)
     Write-Host "[+] $Message" -ForegroundColor Cyan
@@ -39,6 +41,16 @@ function Ensure-Directory {
     if (-not (Test-Path -LiteralPath $Path)) {
         New-Item -ItemType Directory -Path $Path -Force | Out-Null
     }
+}
+
+function Write-FileUtf8 {
+    param(
+        [string]$Path,
+        [string]$Content
+    )
+
+    $encoding = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $Content, $encoding)
 }
 
 function Test-GraphNotFound {
@@ -93,6 +105,9 @@ function Ensure-GraphConnection {
     else {
         Write-Info ("Reusing Graph context for {0}" -f $status.Context.Account)
     }
+
+    $context = Get-MgContext
+    $script:CurrentActorUpn = if ($context) { [string]$context.Account } else { $null }
 }
 
 function Invoke-GraphJson {
@@ -142,10 +157,11 @@ function Invoke-GraphCollection {
             $results.Add($response)
         }
 
-        $nextUri = $response.'@odata.nextLink'
+        $nextLinkProperty = $response.PSObject.Properties['@odata.nextLink']
+        $nextUri = if ($nextLinkProperty) { [string]$nextLinkProperty.Value } else { $null }
     }
 
-    return @($results)
+    return $results.ToArray()
 }
 
 function Escape-ODataString {
@@ -164,6 +180,47 @@ function Get-CurrentRoleAssignments {
     $filter = [Uri]::EscapeDataString(("principalId eq '{0}' and roleDefinitionId eq '{1}' and directoryScopeId eq '{2}'" -f $PrincipalId, $RoleDefinitionId, (Escape-ODataString -Value $DirectoryScopeId)))
     $uri = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments?`$filter=$filter&`$select=id,principalId,roleDefinitionId,directoryScopeId"
     return @(Invoke-GraphCollection -Uri $uri)
+}
+
+function Remove-LegacyDirectoryRoleMember {
+    param(
+        [string]$DirectoryRoleId,
+        [string]$UserId,
+        [string]$UserPrincipalName
+    )
+
+    if ($PSCmdlet.ShouldProcess($UserPrincipalName, 'Remove legacy directory role membership')) {
+        Invoke-GraphJson -Uri ("https://graph.microsoft.com/v1.0/directoryRoles/{0}/members/{1}/`$ref" -f $DirectoryRoleId, $UserId) -Method 'DELETE' | Out-Null
+        return 'Removed'
+    }
+
+    return 'WhatIf'
+}
+
+function Restore-LegacyDirectoryRoleMember {
+    param(
+        [string]$DirectoryRoleId,
+        [string]$UserId,
+        [string]$UserPrincipalName
+    )
+
+    $body = @{
+        '@odata.id' = "https://graph.microsoft.com/v1.0/directoryObjects/$UserId"
+    }
+
+    if ($PSCmdlet.ShouldProcess($UserPrincipalName, 'Restore legacy directory role membership')) {
+        Invoke-GraphJson -Uri ("https://graph.microsoft.com/v1.0/directoryRoles/{0}/members/`$ref" -f $DirectoryRoleId) -Method 'POST' -Body $body | Out-Null
+        return 'Restored'
+    }
+
+    return 'WhatIf'
+}
+
+function Test-ConflictingObjectError {
+    param([System.Management.Automation.ErrorRecord]$ErrorRecord)
+
+    $message = (($ErrorRecord | Out-String) + [string]$ErrorRecord.Exception.Message)
+    return $message -match 'conflicting object' -or $message -match 'added object references already exist'
 }
 
 function Get-DirectGroupMembership {
@@ -251,21 +308,46 @@ if ($RollbackManifestPath) {
     foreach ($operation in @($manifest.operations | Sort-Object Sequence -Descending)) {
         switch ($operation.OperationType) {
             'DeleteRoleAssignment' {
-                $body = @{
-                    principalId = $operation.PrincipalId
-                    roleDefinitionId = $operation.RoleDefinitionId
-                    directoryScopeId = $operation.DirectoryScopeId
-                }
-
-                if ($PSCmdlet.ShouldProcess($operation.PrincipalDisplayName, 'Recreate role assignment')) {
-                    $created = Invoke-GraphJson -Uri 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments' -Method 'POST' -Body $body
+                if ($operation.LegacyRoleId) {
+                    $status = Restore-LegacyDirectoryRoleMember -DirectoryRoleId $operation.LegacyRoleId -UserId $operation.PrincipalId -UserPrincipalName $operation.UserPrincipalName
                     $rollbackResults.Add([pscustomobject]@{
                             Sequence = $operation.Sequence
                             OperationType = $operation.OperationType
-                            Status = 'Restored'
-                            RestoredObjectId = $created.id
+                            Status = $status
+                            RestoredObjectId = $operation.LegacyRoleId
                             Target = $operation.PrincipalDisplayName
                         })
+                }
+                else {
+                    $body = @{
+                        principalId = $operation.PrincipalId
+                        roleDefinitionId = $operation.RoleDefinitionId
+                        directoryScopeId = $operation.DirectoryScopeId
+                    }
+
+                    if ($PSCmdlet.ShouldProcess($operation.PrincipalDisplayName, 'Recreate role assignment')) {
+                        try {
+                            $created = Invoke-GraphJson -Uri 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments' -Method 'POST' -Body $body
+                            $status = 'Restored'
+                            $restoredObjectId = $created.id
+                        }
+                        catch {
+                            if (-not (Test-ConflictingObjectError -ErrorRecord $_)) {
+                                throw
+                            }
+
+                            $status = 'AlreadyRestored'
+                            $restoredObjectId = $null
+                        }
+
+                        $rollbackResults.Add([pscustomobject]@{
+                                Sequence = $operation.Sequence
+                                OperationType = $operation.OperationType
+                                Status = $status
+                                RestoredObjectId = $restoredObjectId
+                                Target = $operation.PrincipalDisplayName
+                            })
+                    }
                 }
             }
             'RemoveGroupMember' {
@@ -274,11 +356,22 @@ if ($RollbackManifestPath) {
                 }
 
                 if ($PSCmdlet.ShouldProcess($operation.UserPrincipalName, 'Re-add group membership')) {
-                    Invoke-GraphJson -Uri ("https://graph.microsoft.com/v1.0/groups/{0}/members/`$ref" -f $operation.GroupId) -Method 'POST' -Body $body | Out-Null
+                    try {
+                        Invoke-GraphJson -Uri ("https://graph.microsoft.com/v1.0/groups/{0}/members/`$ref" -f $operation.GroupId) -Method 'POST' -Body $body | Out-Null
+                        $status = 'Restored'
+                    }
+                    catch {
+                        if (-not (Test-ConflictingObjectError -ErrorRecord $_)) {
+                            throw
+                        }
+
+                        $status = 'AlreadyRestored'
+                    }
+
                     $rollbackResults.Add([pscustomobject]@{
                             Sequence = $operation.Sequence
                             OperationType = $operation.OperationType
-                            Status = 'Restored'
+                            Status = $status
                             RestoredObjectId = $operation.GroupId
                             Target = $operation.UserPrincipalName
                         })
@@ -294,6 +387,15 @@ if ($RollbackManifestPath) {
                         Target = $operation.UserPrincipalName
                     })
             }
+            'SkippedSelfProtection' {
+                $rollbackResults.Add([pscustomobject]@{
+                        Sequence = $operation.Sequence
+                        OperationType = $operation.OperationType
+                        Status = 'Ignored'
+                        RestoredObjectId = $null
+                        Target = $operation.UserPrincipalName
+                    })
+            }
             default {
                 throw "Unsupported rollback operation type '$($operation.OperationType)'."
             }
@@ -301,7 +403,7 @@ if ($RollbackManifestPath) {
     }
 
     $rollbackResultPath = Join-Path $OutputPath 'rollback-results.json'
-    $rollbackResults | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $rollbackResultPath
+    Write-FileUtf8 -Path $rollbackResultPath -Content ($rollbackResults | ConvertTo-Json -Depth 12)
     Write-Info ("Rollback results written to {0}" -f $rollbackResultPath)
     return
 }
@@ -333,25 +435,33 @@ $seenDisabledUsers = @{}
 $sequence = 1
 
 foreach ($finding in $candidateFindings) {
+    if ($CurrentActorUpn -and $finding.UserPrincipalName -eq $CurrentActorUpn) {
+        $manifest.operations += [pscustomobject]@{
+            Sequence = $sequence
+            OperationType = 'SkippedSelfProtection'
+            Status = 'Skipped'
+            UserId = $finding.UserId
+            UserPrincipalName = $finding.UserPrincipalName
+            RoleDisplayName = $finding.RoleDisplayName
+            DirectoryScopeId = $finding.DirectoryScopeId
+            FindingSeverity = $finding.Severity
+        }
+        $sequence++
+        continue
+    }
+
     if ($finding.AccessPath -eq 'Direct') {
         $roleKey = '{0}|{1}|{2}' -f $finding.UserId, $finding.RoleDefinitionId, $finding.DirectoryScopeId
         if (-not $seenRoleAssignments.ContainsKey($roleKey)) {
             $seenRoleAssignments[$roleKey] = $true
-            $currentAssignments = Get-CurrentRoleAssignments -PrincipalId $finding.UserId -RoleDefinitionId $finding.RoleDefinitionId -DirectoryScopeId $finding.DirectoryScopeId
-            foreach ($assignment in $currentAssignments) {
-                if ($PSCmdlet.ShouldProcess($finding.UserPrincipalName, ("Delete direct role assignment {0}" -f $finding.RoleDisplayName))) {
-                    Invoke-GraphJson -Uri ("https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments/{0}" -f $assignment.id) -Method 'DELETE' | Out-Null
-                    $status = 'Deleted'
-                }
-                else {
-                    $status = 'WhatIf'
-                }
-
+            if ($finding.LegacyRoleId) {
+                $status = Remove-LegacyDirectoryRoleMember -DirectoryRoleId $finding.LegacyRoleId -UserId $finding.UserId -UserPrincipalName $finding.UserPrincipalName
                 $manifest.operations += [pscustomobject]@{
                     Sequence = $sequence
                     OperationType = 'DeleteRoleAssignment'
                     Status = $status
-                    RoleAssignmentId = $assignment.id
+                    RoleAssignmentId = $finding.AssignmentInstanceId
+                    LegacyRoleId = $finding.LegacyRoleId
                     PrincipalId = $finding.UserId
                     PrincipalDisplayName = $finding.DisplayName
                     UserPrincipalName = $finding.UserPrincipalName
@@ -361,6 +471,34 @@ foreach ($finding in $candidateFindings) {
                     FindingSeverity = $finding.Severity
                 }
                 $sequence++
+            }
+            else {
+                $currentAssignments = Get-CurrentRoleAssignments -PrincipalId $finding.UserId -RoleDefinitionId $finding.RoleDefinitionId -DirectoryScopeId $finding.DirectoryScopeId
+                foreach ($assignment in $currentAssignments) {
+                    if ($PSCmdlet.ShouldProcess($finding.UserPrincipalName, ("Delete direct role assignment {0}" -f $finding.RoleDisplayName))) {
+                        Invoke-GraphJson -Uri ("https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments/{0}" -f $assignment.id) -Method 'DELETE' | Out-Null
+                        $status = 'Deleted'
+                    }
+                    else {
+                        $status = 'WhatIf'
+                    }
+
+                    $manifest.operations += [pscustomobject]@{
+                        Sequence = $sequence
+                        OperationType = 'DeleteRoleAssignment'
+                        Status = $status
+                        RoleAssignmentId = $assignment.id
+                        LegacyRoleId = $null
+                        PrincipalId = $finding.UserId
+                        PrincipalDisplayName = $finding.DisplayName
+                        UserPrincipalName = $finding.UserPrincipalName
+                        RoleDefinitionId = $finding.RoleDefinitionId
+                        RoleDisplayName = $finding.RoleDisplayName
+                        DirectoryScopeId = $finding.DirectoryScopeId
+                        FindingSeverity = $finding.Severity
+                    }
+                    $sequence++
+                }
             }
         }
     }
@@ -429,7 +567,7 @@ foreach ($finding in $candidateFindings) {
 $manifestPath = Join-Path $OutputPath 'remediation-manifest.json'
 $summaryPath = Join-Path $OutputPath 'remediation-summary.md'
 
-$manifest | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $manifestPath
+$manifestJson = $manifest | ConvertTo-Json -Depth 12
 $summary = @(
     '# Entra Privileged Remediation'
     ''
@@ -439,7 +577,9 @@ $summary = @(
     ('Candidate findings: `{0}`' -f $candidateFindings.Count)
     ('Recorded operations: `{0}`' -f $manifest.operations.Count)
 ) -join [Environment]::NewLine
-$summary | Set-Content -LiteralPath $summaryPath
+
+Write-FileUtf8 -Path $manifestPath -Content $manifestJson
+Write-FileUtf8 -Path $summaryPath -Content $summary
 
 Write-Info ("Remediation manifest written to {0}" -f $manifestPath)
 Write-Info ("Remediation summary written to {0}" -f $summaryPath)

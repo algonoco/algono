@@ -6,6 +6,7 @@ param(
     [string]$OutputPath = '.\artifacts\prontoso-seed',
     [string]$PreferredUserDomain = 'algono.co',
     [string]$InitialPassword,
+    [switch]$UpgradeRoleAssignableGroups,
     [switch]$UseDeviceAuthentication,
     [switch]$ValidateOnly
 )
@@ -46,6 +47,20 @@ function Test-GraphNotFound {
 
     $message = [string]$ErrorRecord.Exception.Message
     return $message -match '404' -or $message -match 'Request_ResourceNotFound' -or $message -match 'NotFound'
+}
+
+function Test-RoleAssignableGroupPremiumError {
+    param([System.Management.Automation.ErrorRecord]$ErrorRecord)
+
+    $message = (($ErrorRecord | Out-String) + [string]$ErrorRecord.Exception.Message)
+    return $message -match 'AAD Premium' -or $message -match 'Authorization_RequestDenied'
+}
+
+function Test-RoleManagementPremiumError {
+    param([System.Management.Automation.ErrorRecord]$ErrorRecord)
+
+    $message = (($ErrorRecord | Out-String) + [string]$ErrorRecord.Exception.Message)
+    return $message -match 'AAD Premium' -or $message -match 'Authorization_RequestDenied'
 }
 
 function Get-GraphContextStatus {
@@ -142,10 +157,11 @@ function Invoke-GraphCollection {
             $results.Add($response)
         }
 
-        $nextUri = $response.'@odata.nextLink'
+        $nextLinkProperty = $response.PSObject.Properties['@odata.nextLink']
+        $nextUri = if ($nextLinkProperty) { [string]$nextLinkProperty.Value } else { $null }
     }
 
-    return @($results)
+    return $results.ToArray()
 }
 
 function Escape-ODataString {
@@ -162,6 +178,25 @@ function Get-NormalizedKey {
     }
 
     return $Value.Trim().ToLowerInvariant()
+}
+
+function Get-OptionalPropertyValue {
+    param(
+        [object]$Object,
+        [string]$PropertyName,
+        $Default = $null
+    )
+
+    if ($null -eq $Object) {
+        return $Default
+    }
+
+    $property = $Object.PSObject.Properties[$PropertyName]
+    if ($property) {
+        return $property.Value
+    }
+
+    return $Default
 }
 
 function Get-MailNickname {
@@ -334,18 +369,27 @@ function Build-UserSpecs {
     }
 
     foreach ($extra in @($Plan.users.extras)) {
-        $parts = if ($extra.givenName -and $extra.surname) {
+        $extraGivenName = Get-OptionalPropertyValue -Object $extra -PropertyName 'givenName'
+        $extraSurname = Get-OptionalPropertyValue -Object $extra -PropertyName 'surname'
+        $extraAlias = Get-OptionalPropertyValue -Object $extra -PropertyName 'alias'
+        $extraUpn = Get-OptionalPropertyValue -Object $extra -PropertyName 'userPrincipalName'
+        $extraCompanyName = Get-OptionalPropertyValue -Object $extra -PropertyName 'companyName'
+        $extraUsageLocation = Get-OptionalPropertyValue -Object $extra -PropertyName 'usageLocation'
+        $extraEmployeeId = Get-OptionalPropertyValue -Object $extra -PropertyName 'employeeId'
+        $extraAccountEnabled = Get-OptionalPropertyValue -Object $extra -PropertyName 'accountEnabled'
+
+        $parts = if ($extraGivenName -and $extraSurname) {
             [pscustomobject]@{
-                GivenName = $extra.givenName
-                Surname = $extra.surname
+                GivenName = $extraGivenName
+                Surname = $extraSurname
             }
         }
         else {
             Convert-DisplayNameToParts -DisplayName $extra.displayName
         }
 
-        $alias = if ($extra.alias) { $extra.alias.ToLowerInvariant() } else { Get-UserAliasFromDisplayName -DisplayName $extra.displayName }
-        $upn = if ($extra.userPrincipalName) { $extra.userPrincipalName } else { '{0}@{1}' -f $alias, $ResolvedDomain }
+        $alias = if ($extraAlias) { $extraAlias.ToLowerInvariant() } else { Get-UserAliasFromDisplayName -DisplayName $extra.displayName }
+        $upn = if ($extraUpn) { $extraUpn } else { '{0}@{1}' -f $alias, $ResolvedDomain }
 
         $specs.Add([pscustomobject]@{
                 Source = 'SeedPlan'
@@ -356,20 +400,20 @@ function Build-UserSpecs {
                 UserPrincipalName = $upn
                 JobTitle = $extra.jobTitle
                 Department = $extra.department
-                AccountEnabled = if ($null -ne $extra.accountEnabled) { [bool]$extra.accountEnabled } else { $true }
-                CompanyName = if ($extra.companyName) { $extra.companyName } elseif ($defaults.companyName) { $defaults.companyName } else { 'Algono' }
-                UsageLocation = if ($extra.usageLocation) { $extra.usageLocation } elseif ($defaults.usageLocation) { $defaults.usageLocation } else { 'US' }
-                EmployeeId = if ($extra.employeeId) { $extra.employeeId } else { 'PRONTOSO-EXTRA-{0}' -f $alias.ToUpperInvariant() }
+                AccountEnabled = if ($null -ne $extraAccountEnabled) { [bool]$extraAccountEnabled } else { $true }
+                CompanyName = if ($extraCompanyName) { $extraCompanyName } elseif ($defaults.companyName) { $defaults.companyName } else { 'Algono' }
+                UsageLocation = if ($extraUsageLocation) { $extraUsageLocation } elseif ($defaults.usageLocation) { $defaults.usageLocation } else { 'US' }
+                EmployeeId = if ($extraEmployeeId) { $extraEmployeeId } else { 'PX-{0}' -f $alias.ToUpperInvariant() }
             })
     }
 
-    return @($specs)
+    return $specs.ToArray()
 }
 
 function Try-GetUserByUpn {
     param([string]$UserPrincipalName)
 
-    $uri = "https://graph.microsoft.com/v1.0/users/$UserPrincipalName?`$select=id,displayName,userPrincipalName,department,jobTitle,accountEnabled,companyName,employeeId"
+    $uri = "https://graph.microsoft.com/v1.0/users/${UserPrincipalName}?`$select=id,displayName,userPrincipalName,department,jobTitle,accountEnabled,companyName,employeeId"
     try {
         return Invoke-GraphJson -Uri $uri
     }
@@ -380,6 +424,42 @@ function Try-GetUserByUpn {
 
         throw
     }
+}
+
+function Try-GetGroupById {
+    param([string]$GroupId)
+
+    try {
+        return Invoke-GraphJson -Uri ("https://graph.microsoft.com/v1.0/groups/{0}?`$select=id,displayName,isAssignableToRole" -f $GroupId)
+    }
+    catch {
+        if (Test-GraphNotFound -ErrorRecord $_) {
+            return $null
+        }
+
+        throw
+    }
+}
+
+function Remove-Group {
+    param(
+        [string]$GroupId,
+        [string]$DisplayName
+    )
+
+    if ($PSCmdlet.ShouldProcess($DisplayName, 'Delete group for role-assignable replacement')) {
+        Invoke-GraphJson -Uri ("https://graph.microsoft.com/v1.0/groups/{0}" -f $GroupId) -Method 'DELETE' | Out-Null
+        for ($attempt = 0; $attempt -lt 12; $attempt++) {
+            Start-Sleep -Seconds 2
+            if ($null -eq (Try-GetGroupById -GroupId $GroupId)) {
+                return 'Deleted'
+            }
+        }
+
+        return 'DeletePending'
+    }
+
+    return 'WhatIf'
 }
 
 function Ensure-User {
@@ -515,7 +595,8 @@ function Add-AdministrativeUnitMember {
         return 'Added'
     }
     catch {
-        if ([string]$_.Exception.Message -match 'added object references already exist') {
+        $message = ($_ | Out-String) + [string]$_.Exception.Message
+        if ($message -match 'added object references already exist' -or $message -match 'conflicting object') {
             return 'Existing'
         }
 
@@ -529,6 +610,17 @@ function Get-OrCreateGroup {
     $filter = [Uri]::EscapeDataString(("displayName eq '{0}'" -f (Escape-ODataString -Value $Spec.displayName)))
     $uri = "https://graph.microsoft.com/v1.0/groups?`$filter=$filter&`$select=id,displayName,isAssignableToRole"
     $existing = @(Invoke-GraphCollection -Uri $uri) | Select-Object -First 1
+
+    if ($existing) {
+        if ([bool]$Spec.isAssignableToRole -and -not [bool](Get-OptionalPropertyValue -Object $existing -PropertyName 'isAssignableToRole' -Default $false) -and $UpgradeRoleAssignableGroups) {
+            $deleteAction = Remove-Group -GroupId $existing.id -DisplayName $existing.displayName
+            if ($deleteAction -eq 'DeletePending') {
+                throw ("Deletion of group '{0}' did not complete in time for role-assignable replacement." -f $existing.displayName)
+            }
+
+            $existing = $null
+        }
+    }
 
     if ($existing) {
         return [pscustomobject]@{
@@ -550,18 +642,39 @@ function Get-OrCreateGroup {
     }
 
     if ($PSCmdlet.ShouldProcess($Spec.displayName, 'Create group')) {
-        $created = Invoke-GraphJson -Uri 'https://graph.microsoft.com/v1.0/groups' -Method 'POST' -Body $body
+        try {
+            $created = Invoke-GraphJson -Uri 'https://graph.microsoft.com/v1.0/groups' -Method 'POST' -Body $body
+            $action = 'Created'
+        }
+        catch {
+            if ([bool]$Spec.isAssignableToRole -and (Test-RoleAssignableGroupPremiumError -ErrorRecord $_)) {
+                Write-WarnLine ("Tenant rejected role-assignable group '{0}'. Falling back to a standard security group because Entra ID Premium is not available." -f $Spec.displayName)
+                $fallbackBody = @{
+                    displayName = $Spec.displayName
+                    description = $Spec.description
+                    mailEnabled = $false
+                    securityEnabled = $true
+                    mailNickname = (Get-MailNickname -Value $Spec.key)
+                }
+                $created = Invoke-GraphJson -Uri 'https://graph.microsoft.com/v1.0/groups' -Method 'POST' -Body $fallbackBody
+                $action = 'CreatedFallbackStandard'
+            }
+            else {
+                throw
+            }
+        }
     }
     else {
         $created = [pscustomobject]@{ id = $null; displayName = $Spec.displayName; isAssignableToRole = [bool]$Spec.isAssignableToRole }
+        $action = 'WhatIf'
     }
 
     [pscustomobject]@{
         Key = $Spec.key
         Id = $created.id
         DisplayName = $created.displayName
-        IsAssignableToRole = [bool]$created.isAssignableToRole
-        Action = 'Created'
+        IsAssignableToRole = [bool](Get-OptionalPropertyValue -Object $created -PropertyName 'isAssignableToRole' -Default $false)
+        Action = $action
     }
 }
 
@@ -585,7 +698,8 @@ function Add-GroupMember {
         return 'Added'
     }
     catch {
-        if ([string]$_.Exception.Message -match 'added object references already exist') {
+        $message = ($_ | Out-String) + [string]$_.Exception.Message
+        if ($message -match 'added object references already exist' -or $message -match 'conflicting object') {
             return 'Existing'
         }
 
@@ -594,13 +708,129 @@ function Add-GroupMember {
 }
 
 function Get-RoleDefinitionsByDisplayName {
-    $definitions = Invoke-GraphCollection -Uri 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleDefinitions?$select=id,displayName'
+    $definitions = Invoke-GraphCollection -Uri 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleDefinitions?$select=id,displayName,templateId'
     $lookup = @{}
     foreach ($definition in $definitions) {
         $lookup[$definition.displayName] = $definition
     }
 
     return $lookup
+}
+
+function Get-OrActivateLegacyDirectoryRole {
+    param([object]$RoleDefinition)
+
+    $filter = [Uri]::EscapeDataString(("displayName eq '{0}'" -f (Escape-ODataString -Value $RoleDefinition.displayName)))
+    $uri = "https://graph.microsoft.com/v1.0/directoryRoles?`$filter=$filter&`$select=id,displayName,roleTemplateId"
+    $existing = @(Invoke-GraphCollection -Uri $uri) | Select-Object -First 1
+    if ($existing) {
+        return [pscustomobject]@{
+            Id = $existing.id
+            DisplayName = $existing.displayName
+            Action = 'Existing'
+        }
+    }
+
+    if (-not $RoleDefinition.templateId) {
+        throw ("Role '{0}' does not expose a templateId, so the legacy directory role fallback cannot activate it." -f $RoleDefinition.displayName)
+    }
+
+    if ($PSCmdlet.ShouldProcess($RoleDefinition.displayName, 'Activate legacy directory role')) {
+        $created = Invoke-GraphJson -Uri 'https://graph.microsoft.com/v1.0/directoryRoles' -Method 'POST' -Body @{ roleTemplateId = $RoleDefinition.templateId }
+    }
+    else {
+        $created = [pscustomobject]@{ id = $null; displayName = $RoleDefinition.displayName }
+    }
+
+    [pscustomobject]@{
+        Id = $created.id
+        DisplayName = $created.displayName
+        Action = 'Activated'
+    }
+}
+
+function Add-LegacyDirectoryRoleMember {
+    param(
+        [string]$DirectoryRoleId,
+        [string]$PrincipalId,
+        [string]$Description
+    )
+
+    $body = @{
+        '@odata.id' = "https://graph.microsoft.com/v1.0/directoryObjects/$PrincipalId"
+    }
+
+    if (-not $PSCmdlet.ShouldProcess($Description, 'Add legacy directory role member')) {
+        return 'WhatIf'
+    }
+
+    try {
+        Invoke-GraphJson -Uri ("https://graph.microsoft.com/v1.0/directoryRoles/{0}/members/`$ref" -f $DirectoryRoleId) -Method 'POST' -Body $body | Out-Null
+        return 'Added'
+    }
+    catch {
+        $message = ($_ | Out-String) + [string]$_.Exception.Message
+        if ($message -match 'added object references already exist' -or $message -match 'conflicting object') {
+            return 'Existing'
+        }
+
+        throw
+    }
+}
+
+function Remove-RoleAssignmentsForPrincipalRoleScope {
+    param(
+        [string]$PrincipalId,
+        [string]$RoleDefinitionId,
+        [string]$DirectoryScopeId,
+        [string]$Description
+    )
+
+    $filter = [Uri]::EscapeDataString(("principalId eq '{0}' and roleDefinitionId eq '{1}' and directoryScopeId eq '{2}'" -f $PrincipalId, $RoleDefinitionId, (Escape-ODataString -Value $DirectoryScopeId)))
+    $uri = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments?`$filter=$filter&`$select=id"
+    $assignments = @(Invoke-GraphCollection -Uri $uri)
+
+    $actions = New-Object System.Collections.Generic.List[string]
+    foreach ($assignment in $assignments) {
+        if ($PSCmdlet.ShouldProcess($Description, ("Delete fallback direct role assignment {0}" -f $assignment.id))) {
+            Invoke-GraphJson -Uri ("https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments/{0}" -f $assignment.id) -Method 'DELETE' | Out-Null
+            $actions.Add($assignment.id)
+        }
+    }
+
+    return $actions.ToArray()
+}
+
+function Remove-LegacyDirectoryRoleMemberIfPresent {
+    param(
+        [object]$RoleDefinition,
+        [string]$PrincipalId,
+        [string]$Description
+    )
+
+    if (-not $RoleDefinition.templateId) {
+        return @()
+    }
+
+    $filter = [Uri]::EscapeDataString(("roleTemplateId eq '{0}'" -f $RoleDefinition.templateId))
+    $uri = "https://graph.microsoft.com/v1.0/directoryRoles?`$filter=$filter&`$select=id,displayName,roleTemplateId"
+    $directoryRole = @(Invoke-GraphCollection -Uri $uri) | Select-Object -First 1
+    if ($null -eq $directoryRole) {
+        return @()
+    }
+
+    $memberUri = "https://graph.microsoft.com/v1.0/directoryRoles/{0}/members?`$select=id" -f $directoryRole.id
+    $members = @(Invoke-GraphCollection -Uri $memberUri)
+    if (-not ($members | Where-Object { $_.id -eq $PrincipalId })) {
+        return @()
+    }
+
+    if ($PSCmdlet.ShouldProcess($Description, ("Delete fallback legacy directory role membership {0}" -f $directoryRole.id))) {
+        Invoke-GraphJson -Uri ("https://graph.microsoft.com/v1.0/directoryRoles/{0}/members/{1}/`$ref" -f $directoryRole.id, $PrincipalId) -Method 'DELETE' | Out-Null
+        return @($directoryRole.id)
+    }
+
+    return @()
 }
 
 function Ensure-RoleAssignment {
@@ -712,7 +942,9 @@ foreach ($spec in $userSpecs) {
 }
 
 $groupLookup = @{}
+$groupSpecLookup = @{}
 foreach ($groupSpec in @($seedPlan.groups)) {
+    $groupSpecLookup[$groupSpec.key] = $groupSpec
     $groupRecord = Get-OrCreateGroup -Spec $groupSpec
     $manifest.groups += $groupRecord
     $groupLookup[$groupSpec.key] = $groupRecord
@@ -740,6 +972,9 @@ foreach ($assignmentSpec in @($seedPlan.roleAssignments)) {
         throw ("Role definition '{0}' was not found in the tenant." -f $assignmentSpec.roleDisplayName)
     }
 
+    $assignmentDirectoryScopeId = Get-OptionalPropertyValue -Object $assignmentSpec -PropertyName 'directoryScopeId'
+    $assignmentAdministrativeUnitKey = Get-OptionalPropertyValue -Object $assignmentSpec -PropertyName 'administrativeUnitKey'
+
     $principalRecord = switch ($assignmentSpec.principalType) {
         'User' {
             if (-not $userLookupByAlias.ContainsKey($assignmentSpec.principal)) {
@@ -760,31 +995,150 @@ foreach ($assignmentSpec in @($seedPlan.roleAssignments)) {
         }
     }
 
-    $directoryScopeId = if ($assignmentSpec.directoryScopeId) {
-        $assignmentSpec.directoryScopeId
+    $directoryScopeId = if ($assignmentDirectoryScopeId) {
+        $assignmentDirectoryScopeId
     }
-    elseif ($assignmentSpec.administrativeUnitKey) {
-        if (-not $administrativeUnitLookup.ContainsKey($assignmentSpec.administrativeUnitKey)) {
-            throw "Administrative unit key '$($assignmentSpec.administrativeUnitKey)' was not created."
+    elseif ($assignmentAdministrativeUnitKey) {
+        if (-not $administrativeUnitLookup.ContainsKey($assignmentAdministrativeUnitKey)) {
+            throw "Administrative unit key '$assignmentAdministrativeUnitKey' was not created."
         }
 
-        '/administrativeUnits/{0}' -f $administrativeUnitLookup[$assignmentSpec.administrativeUnitKey].Id
+        '/administrativeUnits/{0}' -f $administrativeUnitLookup[$assignmentAdministrativeUnitKey].Id
     }
     else {
         '/'
     }
 
     $roleDefinition = $roleDefinitions[$assignmentSpec.roleDisplayName]
-    $roleAssignmentRecord = Ensure-RoleAssignment -PrincipalId $principalRecord.Id -RoleDefinitionId $roleDefinition.id -DirectoryScopeId $directoryScopeId -Description ("{0} -> {1}" -f $principalRecord.DisplayName, $assignmentSpec.roleDisplayName)
-    $manifest.roleAssignments += [pscustomobject]@{
-        RoleAssignmentId = $roleAssignmentRecord.Id
-        PrincipalType = $assignmentSpec.principalType
-        PrincipalDisplayName = $principalRecord.DisplayName
-        PrincipalId = $principalRecord.Id
-        RoleDisplayName = $assignmentSpec.roleDisplayName
-        RoleDefinitionId = $roleDefinition.id
-        DirectoryScopeId = $directoryScopeId
-        Action = $roleAssignmentRecord.Action
+    if ($assignmentSpec.principalType -eq 'Group' -and -not $principalRecord.IsAssignableToRole) {
+        $sourceGroupSpec = $groupSpecLookup[$assignmentSpec.principal]
+        foreach ($memberAlias in @($sourceGroupSpec.members)) {
+            $memberRecord = $userLookupByAlias[$memberAlias]
+            try {
+                $roleAssignmentRecord = Ensure-RoleAssignment -PrincipalId $memberRecord.Id -RoleDefinitionId $roleDefinition.id -DirectoryScopeId $directoryScopeId -Description ("{0} -> {1} (fallback from {2})" -f $memberRecord.DisplayName, $assignmentSpec.roleDisplayName, $principalRecord.DisplayName)
+                $manifest.roleAssignments += [pscustomobject]@{
+                    RoleAssignmentId = $roleAssignmentRecord.Id
+                    PrincipalType = 'UserViaFallbackGroup'
+                    PrincipalDisplayName = $memberRecord.DisplayName
+                    PrincipalId = $memberRecord.Id
+                    SourceGroupDisplayName = $principalRecord.DisplayName
+                    RoleDisplayName = $assignmentSpec.roleDisplayName
+                    RoleDefinitionId = $roleDefinition.id
+                    DirectoryScopeId = $directoryScopeId
+                    Action = $roleAssignmentRecord.Action
+                }
+            }
+            catch {
+                if (-not (Test-RoleManagementPremiumError -ErrorRecord $_)) {
+                    throw
+                }
+
+                $legacyScopeId = if ($directoryScopeId -eq '/') { '/' } else { '/' }
+                if ($directoryScopeId -ne '/') {
+                    Write-WarnLine ("Tenant rejected scoped role assignment for '{0}'. Falling back to tenant-scoped legacy directory role membership." -f $assignmentSpec.roleDisplayName)
+                }
+
+                $legacyDirectoryRole = Get-OrActivateLegacyDirectoryRole -RoleDefinition $roleDefinition
+                $legacyAction = Add-LegacyDirectoryRoleMember -DirectoryRoleId $legacyDirectoryRole.Id -PrincipalId $memberRecord.Id -Description ("{0} -> legacy {1}" -f $memberRecord.DisplayName, $roleDefinition.displayName)
+                $manifest.roleAssignments += [pscustomobject]@{
+                    RoleAssignmentId = $legacyDirectoryRole.Id
+                    PrincipalType = 'UserViaFallbackGroup'
+                    PrincipalDisplayName = $memberRecord.DisplayName
+                    PrincipalId = $memberRecord.Id
+                    SourceGroupDisplayName = $principalRecord.DisplayName
+                    RoleDisplayName = $assignmentSpec.roleDisplayName
+                    RoleDefinitionId = $roleDefinition.id
+                    DirectoryScopeId = $legacyScopeId
+                    IntendedDirectoryScopeId = $directoryScopeId
+                    Action = 'LegacyDirectoryRoleMember'
+                    MembershipAction = $legacyAction
+                }
+            }
+        }
+    }
+    else {
+        try {
+            $roleAssignmentRecord = Ensure-RoleAssignment -PrincipalId $principalRecord.Id -RoleDefinitionId $roleDefinition.id -DirectoryScopeId $directoryScopeId -Description ("{0} -> {1}" -f $principalRecord.DisplayName, $assignmentSpec.roleDisplayName)
+            $manifest.roleAssignments += [pscustomobject]@{
+                RoleAssignmentId = $roleAssignmentRecord.Id
+                PrincipalType = $assignmentSpec.principalType
+                PrincipalDisplayName = $principalRecord.DisplayName
+                PrincipalId = $principalRecord.Id
+                RoleDisplayName = $assignmentSpec.roleDisplayName
+                RoleDefinitionId = $roleDefinition.id
+                DirectoryScopeId = $directoryScopeId
+                Action = $roleAssignmentRecord.Action
+            }
+        }
+        catch {
+            if (-not (Test-RoleManagementPremiumError -ErrorRecord $_)) {
+                throw
+            }
+
+            $legacyScopeId = if ($directoryScopeId -eq '/') { '/' } else { '/' }
+            if ($directoryScopeId -ne '/') {
+                Write-WarnLine ("Tenant rejected scoped role assignment for '{0}'. Falling back to tenant-scoped legacy directory role membership." -f $assignmentSpec.roleDisplayName)
+            }
+
+            $legacyDirectoryRole = Get-OrActivateLegacyDirectoryRole -RoleDefinition $roleDefinition
+            $legacyAction = Add-LegacyDirectoryRoleMember -DirectoryRoleId $legacyDirectoryRole.Id -PrincipalId $principalRecord.Id -Description ("{0} -> legacy {1}" -f $principalRecord.DisplayName, $roleDefinition.displayName)
+            $manifest.roleAssignments += [pscustomobject]@{
+                RoleAssignmentId = $legacyDirectoryRole.Id
+                PrincipalType = $assignmentSpec.principalType
+                PrincipalDisplayName = $principalRecord.DisplayName
+                PrincipalId = $principalRecord.Id
+                RoleDisplayName = $assignmentSpec.roleDisplayName
+                RoleDefinitionId = $roleDefinition.id
+                DirectoryScopeId = $legacyScopeId
+                IntendedDirectoryScopeId = $directoryScopeId
+                Action = 'LegacyDirectoryRoleMember'
+                MembershipAction = $legacyAction
+            }
+        }
+    }
+
+    if ($assignmentSpec.principalType -eq 'Group' -and $principalRecord.IsAssignableToRole) {
+        $sourceGroupSpec = $groupSpecLookup[$assignmentSpec.principal]
+        foreach ($memberAlias in @($sourceGroupSpec.members)) {
+            $memberRecord = $userLookupByAlias[$memberAlias]
+            $removedModernAssignments = Remove-RoleAssignmentsForPrincipalRoleScope -PrincipalId $memberRecord.Id -RoleDefinitionId $roleDefinition.id -DirectoryScopeId $directoryScopeId -Description ("cleanup modern fallback for {0}" -f $memberRecord.DisplayName)
+            $removedLegacyAssignments = Remove-LegacyDirectoryRoleMemberIfPresent -RoleDefinition $roleDefinition -PrincipalId $memberRecord.Id -Description ("cleanup legacy fallback for {0}" -f $memberRecord.DisplayName)
+
+            if (@($removedModernAssignments).Count -gt 0 -or @($removedLegacyAssignments).Count -gt 0) {
+                $manifest.roleAssignments += [pscustomobject]@{
+                    RoleAssignmentId = $null
+                    PrincipalType = 'FallbackCleanup'
+                    PrincipalDisplayName = $memberRecord.DisplayName
+                    PrincipalId = $memberRecord.Id
+                    SourceGroupDisplayName = $principalRecord.DisplayName
+                    RoleDisplayName = $assignmentSpec.roleDisplayName
+                    RoleDefinitionId = $roleDefinition.id
+                    DirectoryScopeId = $directoryScopeId
+                    Action = 'RemovedFallbackDirectAssignment'
+                    RemovedRoleAssignmentIds = $removedModernAssignments
+                    RemovedLegacyRoleIds = $removedLegacyAssignments
+                }
+            }
+        }
+    }
+    elseif ($assignmentAdministrativeUnitKey -and $directoryScopeId -ne '/') {
+        $removedModernAssignments = Remove-RoleAssignmentsForPrincipalRoleScope -PrincipalId $principalRecord.Id -RoleDefinitionId $roleDefinition.id -DirectoryScopeId '/' -Description ("cleanup broadened modern fallback for {0}" -f $principalRecord.DisplayName)
+        $removedLegacyAssignments = Remove-LegacyDirectoryRoleMemberIfPresent -RoleDefinition $roleDefinition -PrincipalId $principalRecord.Id -Description ("cleanup broadened legacy fallback for {0}" -f $principalRecord.DisplayName)
+
+        if (@($removedModernAssignments).Count -gt 0 -or @($removedLegacyAssignments).Count -gt 0) {
+            $manifest.roleAssignments += [pscustomobject]@{
+                RoleAssignmentId = $null
+                PrincipalType = 'FallbackCleanup'
+                PrincipalDisplayName = $principalRecord.DisplayName
+                PrincipalId = $principalRecord.Id
+                RoleDisplayName = $assignmentSpec.roleDisplayName
+                RoleDefinitionId = $roleDefinition.id
+                DirectoryScopeId = $directoryScopeId
+                Action = 'RemovedBroadenedFallbackAssignment'
+                RemovedRoleAssignmentIds = $removedModernAssignments
+                RemovedLegacyRoleIds = $removedLegacyAssignments
+            }
+        }
     }
 }
 

@@ -52,6 +52,13 @@ function Write-WarnLine {
     Write-Warning $Message
 }
 
+function Test-RoleManagementPremiumError {
+    param([System.Management.Automation.ErrorRecord]$ErrorRecord)
+
+    $message = (($ErrorRecord | Out-String) + [string]$ErrorRecord.Exception.Message)
+    return $message -match 'AadPremiumLicenseRequired' -or $message -match 'Entra ID P2' -or $message -match 'ID Governance license'
+}
+
 function Get-DateOrNull {
     param([object]$Value)
 
@@ -78,6 +85,25 @@ function Get-NormalizedLookupKey {
     }
 
     return $Value.Trim().ToLowerInvariant()
+}
+
+function Get-OptionalPropertyValue {
+    param(
+        [object]$Object,
+        [string]$PropertyName,
+        $Default = $null
+    )
+
+    if ($null -eq $Object) {
+        return $Default
+    }
+
+    $property = $Object.PSObject.Properties[$PropertyName]
+    if ($property) {
+        return $property.Value
+    }
+
+    return $Default
 }
 
 function Get-GraphContextStatus {
@@ -168,10 +194,11 @@ function Invoke-GraphCollection {
             $results.Add($response)
         }
 
-        $nextUri = $response.'@odata.nextLink'
+        $nextLinkProperty = $response.PSObject.Properties['@odata.nextLink']
+        $nextUri = if ($nextLinkProperty) { [string]$nextLinkProperty.Value } else { $null }
     }
 
-    return @($results)
+    return $results.ToArray()
 }
 
 function Try-GetUsers {
@@ -235,7 +262,10 @@ function Get-RoleDefinitions {
 }
 
 function Get-RoleAssignments {
-    param([string]$AssignmentKind)
+    param(
+        [string]$AssignmentKind,
+        [object[]]$RoleDefinitions
+    )
 
     $uri = switch ($AssignmentKind) {
         'Active' {
@@ -249,12 +279,79 @@ function Get-RoleAssignments {
         }
     }
 
-    $items = Invoke-GraphCollection -Uri $uri
+    try {
+        $items = Invoke-GraphCollection -Uri $uri
+    }
+    catch {
+        if ($AssignmentKind -eq 'Active' -and (Test-RoleManagementPremiumError -ErrorRecord $_)) {
+            Write-WarnLine 'Modern role schedule APIs require Entra ID P2 in this tenant. Falling back to legacy directory role membership for active assignments.'
+            return Get-LegacyRoleAssignments -RoleDefinitions $RoleDefinitions
+        }
+
+        if ($AssignmentKind -eq 'Eligible' -and (Test-RoleManagementPremiumError -ErrorRecord $_)) {
+            Write-WarnLine 'Eligible role inventory requires Entra ID P2 in this tenant. Skipping eligible assignments.'
+            return @()
+        }
+
+        throw
+    }
+
     foreach ($item in $items) {
         $item | Add-Member -NotePropertyName AssignmentState -NotePropertyValue $AssignmentKind -Force
     }
 
     return @($items)
+}
+
+function Get-LegacyRoleAssignments {
+    param([object[]]$RoleDefinitions)
+
+    $roleDefinitionByTemplateId = @{}
+    $roleDefinitionByDisplayName = @{}
+    foreach ($roleDefinition in $RoleDefinitions) {
+        if ($roleDefinition.templateId) {
+            $roleDefinitionByTemplateId[$roleDefinition.templateId] = $roleDefinition
+        }
+
+        $roleDefinitionByDisplayName[$roleDefinition.displayName] = $roleDefinition
+    }
+
+    $directoryRoles = Invoke-GraphCollection -Uri 'https://graph.microsoft.com/v1.0/directoryRoles?$select=id,displayName,roleTemplateId'
+    $items = New-Object System.Collections.Generic.List[object]
+
+    foreach ($directoryRole in $directoryRoles) {
+        $roleDefinition = $null
+        if ($directoryRole.roleTemplateId -and $roleDefinitionByTemplateId.ContainsKey($directoryRole.roleTemplateId)) {
+            $roleDefinition = $roleDefinitionByTemplateId[$directoryRole.roleTemplateId]
+        }
+        elseif ($roleDefinitionByDisplayName.ContainsKey($directoryRole.displayName)) {
+            $roleDefinition = $roleDefinitionByDisplayName[$directoryRole.displayName]
+        }
+
+        if ($null -eq $roleDefinition) {
+            Write-WarnLine ("Unable to resolve legacy directory role '{0}' to a role definition." -f $directoryRole.displayName)
+            continue
+        }
+
+        $members = Invoke-GraphCollection -Uri ("https://graph.microsoft.com/v1.0/directoryRoles/{0}/members?`$select=id,displayName,userPrincipalName" -f $directoryRole.id)
+        foreach ($member in $members) {
+            $items.Add([pscustomobject]@{
+                    id = ('legacy-{0}-{1}' -f $directoryRole.id, $member.id)
+                    principalId = $member.id
+                    roleDefinitionId = $roleDefinition.id
+                    directoryScopeId = '/'
+                    assignmentType = 'Assigned'
+                    memberType = 'Direct'
+                    startDateTime = $null
+                    endDateTime = $null
+                    AssignmentState = 'Active'
+                    LegacyRoleId = $directoryRole.id
+                    LegacyRoleDisplayName = $directoryRole.displayName
+                })
+        }
+    }
+
+    return $items.ToArray()
 }
 
 function Load-OrgChart {
@@ -308,7 +405,7 @@ function Get-GroupInfo {
         return $Cache[$GroupId]
     }
 
-    $uri = "https://graph.microsoft.com/v1.0/groups/$GroupId?`$select=id,displayName,mailEnabled,securityEnabled,isAssignableToRole"
+    $uri = "https://graph.microsoft.com/v1.0/groups/${GroupId}?`$select=id,displayName,mailEnabled,securityEnabled,isAssignableToRole"
     $group = Invoke-GraphJson -Uri $uri
     $Cache[$GroupId] = $group
     return $group
@@ -342,23 +439,29 @@ function Get-ExceptionMatch {
             continue
         }
 
-        if ($match.userPrincipalName -and ($match.userPrincipalName -ne $Record.UserPrincipalName)) {
+        $matchUserPrincipalName = Get-OptionalPropertyValue -Object $match -PropertyName 'userPrincipalName'
+        $matchDisplayName = Get-OptionalPropertyValue -Object $match -PropertyName 'displayName'
+        $matchRoleDisplayName = Get-OptionalPropertyValue -Object $match -PropertyName 'roleDisplayName'
+        $matchAssignmentState = Get-OptionalPropertyValue -Object $match -PropertyName 'assignmentState'
+        $matchSourceGroupName = Get-OptionalPropertyValue -Object $match -PropertyName 'sourceGroupName'
+
+        if ($matchUserPrincipalName -and ($matchUserPrincipalName -ne $Record.UserPrincipalName)) {
             continue
         }
 
-        if ($match.displayName -and ($match.displayName -ne $Record.DisplayName)) {
+        if ($matchDisplayName -and ($matchDisplayName -ne $Record.DisplayName)) {
             continue
         }
 
-        if ($match.roleDisplayName -and ($match.roleDisplayName -ne $Record.RoleDisplayName)) {
+        if ($matchRoleDisplayName -and ($matchRoleDisplayName -ne $Record.RoleDisplayName)) {
             continue
         }
 
-        if ($match.assignmentState -and ($match.assignmentState -ne $Record.AssignmentState)) {
+        if ($matchAssignmentState -and ($matchAssignmentState -ne $Record.AssignmentState)) {
             continue
         }
 
-        if ($match.sourceGroupName -and ($match.sourceGroupName -ne $Record.SourceGroupName)) {
+        if ($matchSourceGroupName -and ($matchSourceGroupName -ne $Record.SourceGroupName)) {
             continue
         }
 
@@ -410,8 +513,9 @@ function New-FindingRecord {
     $now = [DateTimeOffset]::UtcNow
     $createdDate = Get-DateOrNull -Value $User.createdDateTime
     $lastSuccessful = $null
-    if ($null -ne $User.signInActivity) {
-        $lastSuccessful = Get-DateOrNull -Value $User.signInActivity.lastSuccessfulSignInDateTime
+    $signInActivityProperty = $User.PSObject.Properties['signInActivity']
+    if ($signInActivityProperty -and $null -ne $signInActivityProperty.Value) {
+        $lastSuccessful = Get-DateOrNull -Value $signInActivityProperty.Value.lastSuccessfulSignInDateTime
     }
 
     $daysSinceSignIn = if ($lastSuccessful) {
@@ -511,6 +615,8 @@ function New-FindingRecord {
         DirectoryScopeId = $Assignment.directoryScopeId
         AssignmentStartDateTime = $Assignment.startDateTime
         AssignmentEndDateTime = $Assignment.endDateTime
+        LegacyRoleId = (Get-OptionalPropertyValue -Object $Assignment -PropertyName 'LegacyRoleId')
+        LegacyRoleDisplayName = (Get-OptionalPropertyValue -Object $Assignment -PropertyName 'LegacyRoleDisplayName')
         Signals = @($signals)
         RiskScore = $score
         Severity = $null
@@ -632,9 +738,9 @@ foreach ($roleDefinition in $roleDefinitions) {
     $roleLookup[$roleDefinition.id] = $roleDefinition
 }
 
-$activeAssignments = Get-RoleAssignments -AssignmentKind 'Active'
+$activeAssignments = Get-RoleAssignments -AssignmentKind 'Active' -RoleDefinitions $roleDefinitions
 $eligibleAssignments = if ($IncludeEligibleAssignments) {
-    Get-RoleAssignments -AssignmentKind 'Eligible'
+    Get-RoleAssignments -AssignmentKind 'Eligible' -RoleDefinitions $roleDefinitions
 }
 else {
     @()
