@@ -594,6 +594,8 @@
                 <span class="code-block-lang">PowerShell</span>
               </div>
               <pre role="img" aria-label="Free audit command"><span class="cmd">PS&gt;</span> iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 | iex</pre>
+              <pre role="img" aria-label="Alternative approach: comment and command to save script to disk first"><span class="cmt"># or save to disk first:</span>
+<span class="cmd">PS&gt;</span> iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 <span class="flag">-OutFile</span> Scan-EntraPrivilegedUsers.ps1</pre>
             </div>
           </div>
         </div>
@@ -757,7 +759,7 @@
             $ checkout — $400
           </a>
           <p class="pricing-fine">
-            Payment via Stripe. Direct download link provided immediately after Stripe checkout.<br>
+            Payment via Stripe. Download link sent to your payment email within minutes.<br>
             Software provided as-is. One-time purchase for the current toolkit build. No subscription, no recurring fees, no automated updates.<br>
             Questions: <a href="mailto:architect@algono.co" style="color: var(--color-text-muted);">architect@algono.co</a>
           </p>
@@ -804,7 +806,7 @@
               Can I try it before buying?
               <span class="faq-q-marker" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a">The free audit script is available on the public GitHub org. Open an issue to get the scan link — it reads your environment and gives you a real findings report. If you have a problem worth fixing, the full toolkit is $400.</div>
+            <div class="faq-a">The free audit script is a direct download. Run it now — no sign-up, no issue to open, no email required. <code>iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 | iex</code> — or save to disk first and inspect it. Read-only, no writes. If you have findings worth fixing, the toolkit is $400.</div>
           </div>
           <div class="faq-item" role="listitem">
             <button class="faq-q" aria-expanded="false">
