@@ -249,6 +249,15 @@
     }
     .hero-price strong { color: var(--color-text); font-weight: 600; }
 
+    /* ── Aura Text (No Email Banner) ── */
+    .aura-text {
+      color: #000000;
+      font-weight: 800;
+      text-shadow: 0 0 8px #3dcc8e, 0 0 15px #3dcc8e;
+      padding: var(--space-2) var(--space-4);
+      display: inline-block;
+    }
+
     /* ── Findings banner ── */
     .findings-bar {
       padding: var(--space-6) 0;
@@ -574,13 +583,19 @@
           <strong>Intern God-Mode</strong> — the pattern of over-privileged AD/Entra identities that accumulate through ticket-driven permission creep and onboarding laziness. This toolkit finds it, fixes it, and rolls back every write if something breaks.
         </p>
         <div class="hero-actions">
-          <a href="#buy" class="btn-primary" id="hero-buy-btn">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Get the toolkit — $400
-          </a>
-          <span class="hero-price"><strong>$400</strong> one-time · no subscription · no phone-home</span>
+          <div>
+            <div class="aura-text">
+              WE DON'T EVEN WANT YOUR EMAIL.<br>
+              SCAN FREE.
+            </div>
+            <div class="code-block" style="margin-top: var(--space-4); max-width: 700px;">
+              <div class="code-block-header">
+                <span class="code-block-title">free audit — no sign-up</span>
+                <span class="code-block-lang">PowerShell</span>
+              </div>
+              <pre role="img" aria-label="Free audit command"><span class="cmd">PS&gt;</span> iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 | iex</pre>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -684,7 +699,7 @@
             <span class="deliverable-marker">[04]</span>
             <div class="deliverable-body">
               <div class="deliverable-title">Single-org perpetual license</div>
-              <div class="deliverable-desc">One tenant. No seats, no SaaS, no callbacks. Run it as many times as you need. Updates pushed to the private repo.</div>
+              <div class="deliverable-desc">One tenant. No seats, no SaaS, no callbacks. Run it as many times as you need.</div>
             </div>
           </div>
         </div>
@@ -726,9 +741,8 @@
             <li>Audit script (read-only, safe to run now)</li>
             <li>Remediation script with dry-run mode</li>
             <li>Rollback script + JSON manifest format</li>
-            <li>Private GitHub repo invite post-payment</li>
-            <li>Perpetual license — one tenant, unlimited runs</li>
-            <li>Updates pushed to the repo</li>
+            <li>Instant ZIP download via signed URL post-payment</li>
+            <li>Perpetual license for the current version — no maintenance tail, no forced updates</li>
           </ul>
           <a
             href="#"
@@ -743,7 +757,8 @@
             $ checkout — $400
           </a>
           <p class="pricing-fine">
-            Payment via Stripe. After payment you'll receive a GitHub repo invite at the email you use at checkout.
+            Payment via Stripe. Direct download link provided immediately after Stripe checkout.<br>
+            Software provided as-is. One-time purchase for the current toolkit build. No subscription, no recurring fees, no automated updates.<br>
             Questions: <a href="mailto:architect@algono.co" style="color: var(--color-text-muted);">architect@algono.co</a>
           </p>
         </div>
@@ -796,7 +811,7 @@
               When do I get access after payment?
               <span class="faq-q-marker" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a">GitHub repo invite sent to your payment email within a few hours. If you don't see it, check spam or email architect@algono.co with your transaction ID.</div>
+            <div class="faq-a">Immediately. Stripe redirects you to a success page with a signed URL to download the toolkit .zip.</div>
           </div>
         </div>
       </div>
