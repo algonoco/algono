@@ -566,9 +566,15 @@ foreach ($finding in $candidateFindings) {
 
 $manifestPath = Join-Path $OutputPath 'remediation-manifest.json'
 $summaryPath = Join-Path $OutputPath 'remediation-summary.md'
+$manualReviewJsonPath = Join-Path $OutputPath 'needs-manual-review.json'
+$manualReviewCsvPath = Join-Path $OutputPath 'needs-manual-review.csv'
 
 $manifestJson = $manifest | ConvertTo-Json -Depth 12
-$summary = @(
+$statusCounts = @($manifest.operations | Group-Object Status | Sort-Object Name)
+$manualReviewOperations = @($manifest.operations | Where-Object { $_.Status -eq 'SkippedNestedOrMissing' })
+
+$summaryLines = New-Object System.Collections.Generic.List[string]
+$summaryLines.AddRange(@(
     '# Entra Privileged Remediation'
     ''
     ('Tenant: `{0}`' -f $TenantIdOrDomain)
@@ -576,10 +582,41 @@ $summary = @(
     ('Disable accounts: `{0}`' -f [bool]$DisableAccounts)
     ('Candidate findings: `{0}`' -f $candidateFindings.Count)
     ('Recorded operations: `{0}`' -f $manifest.operations.Count)
-) -join [Environment]::NewLine
+))
+
+if ($statusCounts.Count -gt 0) {
+    $summaryLines.Add('')
+    $summaryLines.Add('## Operation Status Counts')
+    foreach ($statusCount in $statusCounts) {
+        $summaryLines.Add(('- `{0}`: {1}' -f $statusCount.Name, $statusCount.Count))
+    }
+}
+
+if ($manualReviewOperations.Count -gt 0) {
+    $summaryLines.Add('')
+    $summaryLines.Add(('## Skipped - Nested or Missing Group Memberships ({0})' -f $manualReviewOperations.Count))
+    $summaryLines.Add('These require manual review because the user is not a direct member of the privileged source group.')
+    $summaryLines.Add(('Artifacts: `{0}`, `{1}`' -f $manualReviewJsonPath, $manualReviewCsvPath))
+
+    foreach ($operation in $manualReviewOperations) {
+        $summaryLines.Add(('- `{0}` via `{1}` (`{2}`)' -f $operation.UserPrincipalName, $operation.GroupDisplayName, $operation.RoleDisplayName))
+    }
+}
+
+$summary = $summaryLines -join [Environment]::NewLine
+$manualReviewJson = $manualReviewOperations | ConvertTo-Json -Depth 12
+$manualReviewCsvRows = @(
+    $manualReviewOperations |
+        Select-Object Sequence, Status, UserPrincipalName, UserId, GroupDisplayName, GroupId, RoleDisplayName, DirectoryScopeId, FindingSeverity |
+        ConvertTo-Csv -NoTypeInformation
+)
+$manualReviewCsv = $manualReviewCsvRows -join [Environment]::NewLine
 
 Write-FileUtf8 -Path $manifestPath -Content $manifestJson
 Write-FileUtf8 -Path $summaryPath -Content $summary
+Write-FileUtf8 -Path $manualReviewJsonPath -Content $manualReviewJson
+Write-FileUtf8 -Path $manualReviewCsvPath -Content $manualReviewCsv
 
 Write-Info ("Remediation manifest written to {0}" -f $manifestPath)
 Write-Info ("Remediation summary written to {0}" -f $summaryPath)
+Write-Info ("Manual review artifacts written to {0} and {1}" -f $manualReviewJsonPath, $manualReviewCsvPath)
