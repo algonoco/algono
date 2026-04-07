@@ -1,0 +1,65 @@
+[
+  {
+    "Sequence": 9,
+    "OperationType": "DeleteRoleAssignment",
+    "Status": "AlreadyRestored",
+    "RestoredObjectId": null,
+    "Target": "Evelyn Thorne"
+  },
+  {
+    "Sequence": 8,
+    "OperationType": "DeleteRoleAssignment",
+    "Status": "AlreadyRestored",
+    "RestoredObjectId": null,
+    "Target": "Toby Flenderson"
+  },
+  {
+    "Sequence": 7,
+    "OperationType": "DeleteRoleAssignment",
+    "Status": "AlreadyRestored",
+    "RestoredObjectId": null,
+    "Target": "Kelly Kapoor"
+  },
+  {
+    "Sequence": 6,
+    "OperationType": "RemoveGroupMember",
+    "Status": "AlreadyRestored",
+    "RestoredObjectId": "83849ffe-c40d-4fb5-8b32-7d2e14a04cfb",
+    "Target": "ryan.howard@algono.co"
+  },
+  {
+    "Sequence": 5,
+    "OperationType": "SkippedSelfProtection",
+    "Status": "Ignored",
+    "RestoredObjectId": null,
+    "Target": "lmw@algono.co"
+  },
+  {
+    "Sequence": 4,
+    "OperationType": "RemoveGroupMember",
+    "Status": "Restored",
+    "RestoredObjectId": "83849ffe-c40d-4fb5-8b32-7d2e14a04cfb",
+    "Target": "kelly.kapoor@algono.co"
+  },
+  {
+    "Sequence": 3,
+    "OperationType": "RemoveGroupMember",
+    "Status": "Restored",
+    "RestoredObjectId": "83849ffe-c40d-4fb5-8b32-7d2e14a04cfb",
+    "Target": "gabe.lewis@algono.co"
+  },
+  {
+    "Sequence": 2,
+    "OperationType": "RemoveGroupMember",
+    "Status": "Restored",
+    "RestoredObjectId": "d6c0f7dc-6287-4e83-86d5-219e7bd5da20",
+    "Target": "todd@algono.co"
+  },
+  {
+    "Sequence": 1,
+    "OperationType": "RemoveGroupMember",
+    "Status": "Restored",
+    "RestoredObjectId": "d6c0f7dc-6287-4e83-86d5-219e7bd5da20",
+    "Target": "creed.bratton@algono.co"
+  }
+]

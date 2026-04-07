@@ -1,0 +1,52 @@
+{
+  "Scorecard": {
+    "DomainExposureScore": 70,
+    "TierZeroPrincipalCount": 2,
+    "PrivilegedEdgeCount": 5,
+    "PrincipalScores": {
+      "grp-domain-admins": 10,
+      "grp-server-admins": 9,
+      "svc-backup": 10,
+      "user-alice": 4,
+      "user-bob": 6,
+      "cmp-dc01": 0
+    }
+  },
+  "Findings": [
+    {
+      "Severity": 3,
+      "Title": "Server Admins has ShadowAdmin capability",
+      "Summary": "Server Admins reaches Domain Admins through a path attackers would treat as tier-zero.",
+      "Evidence": [
+        "ShadowAdmin: Nested via delegated maintenance group."
+      ],
+      "ImpactedPrincipalIds": [
+        "grp-server-admins",
+        "grp-domain-admins"
+      ]
+    },
+    {
+      "Severity": 3,
+      "Title": "svc-backup has Replication capability",
+      "Summary": "svc-backup reaches dc01 through a path attackers would treat as tier-zero.",
+      "Evidence": [
+        "Replication: Service account can replicate directory changes."
+      ],
+      "ImpactedPrincipalIds": [
+        "svc-backup",
+        "cmp-dc01"
+      ]
+    },
+    {
+      "Severity": 2,
+      "Title": "Privileged service account: svc-backup",
+      "Summary": "Service accounts with standing privilege widen the blast radius because their secrets are reused and rarely rotated aggressively.",
+      "Evidence": [
+        "Review logon scope, secret storage, and interactive sign-in settings."
+      ],
+      "ImpactedPrincipalIds": [
+        "svc-backup"
+      ]
+    }
+  ]
+}

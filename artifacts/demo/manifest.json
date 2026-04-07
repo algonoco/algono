@@ -1,0 +1,8 @@
+{
+  "DomainName": "corp.algono.local",
+  "GeneratedAtUtc": "2026-04-04T06:44:56.8618046+00:00",
+  "SnapshotPath": "C:\\Users\\CodexSandboxOffline\\.codex\\.sandbox\\cwd\\1e104b6a81144808\\artifacts\\demo\\snapshot.json",
+  "AnalysisPath": "C:\\Users\\CodexSandboxOffline\\.codex\\.sandbox\\cwd\\1e104b6a81144808\\artifacts\\demo\\analysis.json",
+  "NarrativePath": "C:\\Users\\CodexSandboxOffline\\.codex\\.sandbox\\cwd\\1e104b6a81144808\\artifacts\\demo\\summary.md",
+  "NextStep": "Replace JsonReportEmitter with a Typst-backed PDF emitter once the real collector is in place."
+}

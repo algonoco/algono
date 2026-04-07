@@ -1,0 +1,110 @@
+{
+  "DomainName": "corp.algono.local",
+  "CapturedAtUtc": "2026-04-04T06:44:56.773848+00:00",
+  "Principals": [
+    {
+      "Id": "grp-domain-admins",
+      "Name": "Domain Admins",
+      "Kind": 1,
+      "IsEnabled": true,
+      "IsPrivileged": true,
+      "IsTierZero": true,
+      "Tags": [
+        "tier0",
+        "built-in"
+      ]
+    },
+    {
+      "Id": "grp-server-admins",
+      "Name": "Server Admins",
+      "Kind": 1,
+      "IsEnabled": true,
+      "IsPrivileged": true,
+      "IsTierZero": false,
+      "Tags": [
+        "ops"
+      ]
+    },
+    {
+      "Id": "svc-backup",
+      "Name": "svc-backup",
+      "Kind": 3,
+      "IsEnabled": true,
+      "IsPrivileged": true,
+      "IsTierZero": false,
+      "Tags": [
+        "service-account"
+      ]
+    },
+    {
+      "Id": "user-alice",
+      "Name": "alice",
+      "Kind": 0,
+      "IsEnabled": true,
+      "IsPrivileged": false,
+      "IsTierZero": false,
+      "Tags": [
+        "helpdesk"
+      ]
+    },
+    {
+      "Id": "user-bob",
+      "Name": "bob",
+      "Kind": 0,
+      "IsEnabled": true,
+      "IsPrivileged": false,
+      "IsTierZero": false,
+      "Tags": [
+        "engineering"
+      ]
+    },
+    {
+      "Id": "cmp-dc01",
+      "Name": "dc01",
+      "Kind": 2,
+      "IsEnabled": true,
+      "IsPrivileged": true,
+      "IsTierZero": true,
+      "Tags": [
+        "domain-controller"
+      ]
+    }
+  ],
+  "PrivilegeEdges": [
+    {
+      "SourceId": "grp-server-admins",
+      "TargetId": "grp-domain-admins",
+      "Kind": 5,
+      "Rationale": "Nested via delegated maintenance group.",
+      "Weight": 9
+    },
+    {
+      "SourceId": "svc-backup",
+      "TargetId": "cmp-dc01",
+      "Kind": 3,
+      "Rationale": "Service account can replicate directory changes.",
+      "Weight": 10
+    },
+    {
+      "SourceId": "user-alice",
+      "TargetId": "grp-server-admins",
+      "Kind": 0,
+      "Rationale": "Direct membership.",
+      "Weight": 4
+    },
+    {
+      "SourceId": "grp-domain-admins",
+      "TargetId": "cmp-dc01",
+      "Kind": 1,
+      "Rationale": "Tier-zero administration.",
+      "Weight": 10
+    },
+    {
+      "SourceId": "user-bob",
+      "TargetId": "grp-server-admins",
+      "Kind": 2,
+      "Rationale": "OU delegation grants server admin path.",
+      "Weight": 6
+    }
+  ]
+}

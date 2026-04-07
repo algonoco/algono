@@ -1,0 +1,522 @@
+{
+  "generatedAt": "2026-04-07T02:23:12.1554034+00:00",
+  "tenant": "algono.co",
+  "tenantDisplayName": "Algono",
+  "resolvedUserDomain": "algono.co",
+  "users": [
+    {
+      "Alias": "evelyn.thorne",
+      "DisplayName": "Evelyn Thorne",
+      "Id": "585b651f-96d5-4a71-9727-7a3d16f17669",
+      "UserId": "585b651f-96d5-4a71-9727-7a3d16f17669",
+      "UserPrincipalName": "evelyn.thorne@algono.co",
+      "Department": "Executive_Floor",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "marcus.vane",
+      "DisplayName": "Marcus Vane",
+      "Id": "f46cc594-71ef-4d16-99f1-a3024f6d381d",
+      "UserId": "f46cc594-71ef-4d16-99f1-a3024f6d381d",
+      "UserPrincipalName": "marcus.vane@algono.co",
+      "Department": "Executive_Floor",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "sarah.jenkins",
+      "DisplayName": "Sarah Jenkins",
+      "Id": "0a0ba203-0ead-4319-b68b-7b4383864758",
+      "UserId": "0a0ba203-0ead-4319-b68b-7b4383864758",
+      "UserPrincipalName": "sarah.jenkins@algono.co",
+      "Department": "Executive_Floor",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "david.chen",
+      "DisplayName": "David Chen",
+      "Id": "0c808c00-ed98-4a14-b556-1b7f8934b8e2",
+      "UserId": "0c808c00-ed98-4a14-b556-1b7f8934b8e2",
+      "UserPrincipalName": "david.chen@algono.co",
+      "Department": "IT_Operations",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "elena.rodriguez",
+      "DisplayName": "Elena Rodriguez",
+      "Id": "5f9da0ca-e870-4855-af49-56ac5c6db72d",
+      "UserId": "5f9da0ca-e870-4855-af49-56ac5c6db72d",
+      "UserPrincipalName": "elena.rodriguez@algono.co",
+      "Department": "IT_Operations",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "michael.scott",
+      "DisplayName": "Michael Scott",
+      "Id": "4959b304-3cb1-4ed8-9a5b-53d280223d10",
+      "UserId": "4959b304-3cb1-4ed8-9a5b-53d280223d10",
+      "UserPrincipalName": "michael.scott@algono.co",
+      "Department": "IT_Operations",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "jim.halpert",
+      "DisplayName": "Jim Halpert",
+      "Id": "5830f028-b414-4c72-a2a4-e0c318231e97",
+      "UserId": "5830f028-b414-4c72-a2a4-e0c318231e97",
+      "UserPrincipalName": "jim.halpert@algono.co",
+      "Department": "IT_Operations",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "pam.beesly",
+      "DisplayName": "Pam Beesly",
+      "Id": "e894db34-5d0a-4ecf-a3db-e8f0875a2060",
+      "UserId": "e894db34-5d0a-4ecf-a3db-e8f0875a2060",
+      "UserPrincipalName": "pam.beesly@algono.co",
+      "Department": "IT_Operations",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "dwight.schrute",
+      "DisplayName": "Dwight Schrute",
+      "Id": "9fb9f752-e129-48e5-b266-8fac4cd345dc",
+      "UserId": "9fb9f752-e129-48e5-b266-8fac4cd345dc",
+      "UserPrincipalName": "dwight.schrute@algono.co",
+      "Department": "IT_Operations",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "angela.martin",
+      "DisplayName": "Angela Martin",
+      "Id": "5ad0b326-eb11-445d-aec9-883943e1c5e9",
+      "UserId": "5ad0b326-eb11-445d-aec9-883943e1c5e9",
+      "UserPrincipalName": "angela.martin@algono.co",
+      "Department": "IT_Operations",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "kevin.malone",
+      "DisplayName": "Kevin Malone",
+      "Id": "961b7b01-b074-4766-8d03-d37563633217",
+      "UserId": "961b7b01-b074-4766-8d03-d37563633217",
+      "UserPrincipalName": "kevin.malone@algono.co",
+      "Department": "IT_Operations",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "oscar.martinez",
+      "DisplayName": "Oscar Martinez",
+      "Id": "c5bb6b97-b1d0-4b2a-aeae-6ec40d0f3789",
+      "UserId": "c5bb6b97-b1d0-4b2a-aeae-6ec40d0f3789",
+      "UserPrincipalName": "oscar.martinez@algono.co",
+      "Department": "IT_Operations",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "toby.flenderson",
+      "DisplayName": "Toby Flenderson",
+      "Id": "23dc49e5-1e66-4070-a4b1-edcab5ee54aa",
+      "UserId": "23dc49e5-1e66-4070-a4b1-edcab5ee54aa",
+      "UserPrincipalName": "toby.flenderson@algono.co",
+      "Department": "HR_Admin",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "kelly.kapoor",
+      "DisplayName": "Kelly Kapoor",
+      "Id": "55c57361-49e9-4539-9e06-06d58da92f19",
+      "UserId": "55c57361-49e9-4539-9e06-06d58da92f19",
+      "UserPrincipalName": "kelly.kapoor@algono.co",
+      "Department": "Service_Desk",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "ryan.howard",
+      "DisplayName": "Ryan Howard",
+      "Id": "cebfc0df-7fa1-4a2d-9da1-671300268a53",
+      "UserId": "cebfc0df-7fa1-4a2d-9da1-671300268a53",
+      "UserPrincipalName": "ryan.howard@algono.co",
+      "Department": "Service_Desk",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "stanley.hudson",
+      "DisplayName": "Stanley Hudson",
+      "Id": "21d25b81-82f9-4f94-a92a-090a4248d739",
+      "UserId": "21d25b81-82f9-4f94-a92a-090a4248d739",
+      "UserPrincipalName": "stanley.hudson@algono.co",
+      "Department": "Service_Desk",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "phyllis.vance",
+      "DisplayName": "Phyllis Vance",
+      "Id": "6c40cf7d-6dfe-47f1-ad4e-a1a82fd54e33",
+      "UserId": "6c40cf7d-6dfe-47f1-ad4e-a1a82fd54e33",
+      "UserPrincipalName": "phyllis.vance@algono.co",
+      "Department": "Service_Desk",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "creed.bratton",
+      "DisplayName": "Creed Bratton",
+      "Id": "304f9996-51f0-4302-ac6d-2f9a879c5f81",
+      "UserId": "304f9996-51f0-4302-ac6d-2f9a879c5f81",
+      "UserPrincipalName": "creed.bratton@algono.co",
+      "Department": "Service_Desk",
+      "AccountEnabled": false,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "meredith.palmer",
+      "DisplayName": "Meredith Palmer",
+      "Id": "310574ae-ff9f-4747-952e-7b27a84e9e9b",
+      "UserId": "310574ae-ff9f-4747-952e-7b27a84e9e9b",
+      "UserPrincipalName": "meredith.palmer@algono.co",
+      "Department": "Service_Desk",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "gabe.lewis",
+      "DisplayName": "Gabe Lewis",
+      "Id": "4eb32e4b-e00e-4cd8-855f-4af9001482b8",
+      "UserId": "4eb32e4b-e00e-4cd8-855f-4af9001482b8",
+      "UserPrincipalName": "gabe.lewis@algono.co",
+      "Department": "Service_Desk",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    },
+    {
+      "Alias": "todd",
+      "DisplayName": "Todd Packer",
+      "Id": "714bd68b-0908-464f-ab61-bf8073bb8aaf",
+      "UserId": "714bd68b-0908-464f-ab61-bf8073bb8aaf",
+      "UserPrincipalName": "todd@algono.co",
+      "Department": "Accounting",
+      "AccountEnabled": true,
+      "Action": "Existing",
+      "GeneratedPassword": null
+    }
+  ],
+  "administrativeUnits": [
+    {
+      "Key": "Executive_Floor",
+      "Id": "30ad5758-5b36-4eff-baba-94e04da1324b",
+      "DisplayName": "Prontoso Executive Floor",
+      "Action": "Existing"
+    },
+    {
+      "Key": "IT_Operations",
+      "Id": "7b325dbc-4991-4f25-a752-143db6ed18e7",
+      "DisplayName": "Prontoso IT Operations",
+      "Action": "Existing"
+    },
+    {
+      "Key": "HR_Admin",
+      "Id": "a76aae7a-5fad-4d0a-98d4-8698e81109c2",
+      "DisplayName": "Prontoso HR Admin",
+      "Action": "Existing"
+    },
+    {
+      "Key": "Service_Desk",
+      "Id": "1dfbc11b-9fe5-49d2-8c77-7c758f1dfca1",
+      "DisplayName": "Prontoso Service Desk",
+      "Action": "Existing"
+    }
+  ],
+  "administrativeUnitMemberships": [
+    {
+      "AdministrativeUnitId": "30ad5758-5b36-4eff-baba-94e04da1324b",
+      "AdministrativeUnitDisplayName": "Prontoso Executive Floor",
+      "UserId": "585b651f-96d5-4a71-9727-7a3d16f17669",
+      "UserPrincipalName": "evelyn.thorne@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "30ad5758-5b36-4eff-baba-94e04da1324b",
+      "AdministrativeUnitDisplayName": "Prontoso Executive Floor",
+      "UserId": "f46cc594-71ef-4d16-99f1-a3024f6d381d",
+      "UserPrincipalName": "marcus.vane@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "30ad5758-5b36-4eff-baba-94e04da1324b",
+      "AdministrativeUnitDisplayName": "Prontoso Executive Floor",
+      "UserId": "0a0ba203-0ead-4319-b68b-7b4383864758",
+      "UserPrincipalName": "sarah.jenkins@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "7b325dbc-4991-4f25-a752-143db6ed18e7",
+      "AdministrativeUnitDisplayName": "Prontoso IT Operations",
+      "UserId": "0c808c00-ed98-4a14-b556-1b7f8934b8e2",
+      "UserPrincipalName": "david.chen@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "7b325dbc-4991-4f25-a752-143db6ed18e7",
+      "AdministrativeUnitDisplayName": "Prontoso IT Operations",
+      "UserId": "5f9da0ca-e870-4855-af49-56ac5c6db72d",
+      "UserPrincipalName": "elena.rodriguez@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "7b325dbc-4991-4f25-a752-143db6ed18e7",
+      "AdministrativeUnitDisplayName": "Prontoso IT Operations",
+      "UserId": "4959b304-3cb1-4ed8-9a5b-53d280223d10",
+      "UserPrincipalName": "michael.scott@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "7b325dbc-4991-4f25-a752-143db6ed18e7",
+      "AdministrativeUnitDisplayName": "Prontoso IT Operations",
+      "UserId": "5830f028-b414-4c72-a2a4-e0c318231e97",
+      "UserPrincipalName": "jim.halpert@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "7b325dbc-4991-4f25-a752-143db6ed18e7",
+      "AdministrativeUnitDisplayName": "Prontoso IT Operations",
+      "UserId": "e894db34-5d0a-4ecf-a3db-e8f0875a2060",
+      "UserPrincipalName": "pam.beesly@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "7b325dbc-4991-4f25-a752-143db6ed18e7",
+      "AdministrativeUnitDisplayName": "Prontoso IT Operations",
+      "UserId": "9fb9f752-e129-48e5-b266-8fac4cd345dc",
+      "UserPrincipalName": "dwight.schrute@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "7b325dbc-4991-4f25-a752-143db6ed18e7",
+      "AdministrativeUnitDisplayName": "Prontoso IT Operations",
+      "UserId": "5ad0b326-eb11-445d-aec9-883943e1c5e9",
+      "UserPrincipalName": "angela.martin@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "7b325dbc-4991-4f25-a752-143db6ed18e7",
+      "AdministrativeUnitDisplayName": "Prontoso IT Operations",
+      "UserId": "961b7b01-b074-4766-8d03-d37563633217",
+      "UserPrincipalName": "kevin.malone@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "7b325dbc-4991-4f25-a752-143db6ed18e7",
+      "AdministrativeUnitDisplayName": "Prontoso IT Operations",
+      "UserId": "c5bb6b97-b1d0-4b2a-aeae-6ec40d0f3789",
+      "UserPrincipalName": "oscar.martinez@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "a76aae7a-5fad-4d0a-98d4-8698e81109c2",
+      "AdministrativeUnitDisplayName": "Prontoso HR Admin",
+      "UserId": "23dc49e5-1e66-4070-a4b1-edcab5ee54aa",
+      "UserPrincipalName": "toby.flenderson@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "1dfbc11b-9fe5-49d2-8c77-7c758f1dfca1",
+      "AdministrativeUnitDisplayName": "Prontoso Service Desk",
+      "UserId": "55c57361-49e9-4539-9e06-06d58da92f19",
+      "UserPrincipalName": "kelly.kapoor@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "1dfbc11b-9fe5-49d2-8c77-7c758f1dfca1",
+      "AdministrativeUnitDisplayName": "Prontoso Service Desk",
+      "UserId": "cebfc0df-7fa1-4a2d-9da1-671300268a53",
+      "UserPrincipalName": "ryan.howard@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "1dfbc11b-9fe5-49d2-8c77-7c758f1dfca1",
+      "AdministrativeUnitDisplayName": "Prontoso Service Desk",
+      "UserId": "21d25b81-82f9-4f94-a92a-090a4248d739",
+      "UserPrincipalName": "stanley.hudson@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "1dfbc11b-9fe5-49d2-8c77-7c758f1dfca1",
+      "AdministrativeUnitDisplayName": "Prontoso Service Desk",
+      "UserId": "6c40cf7d-6dfe-47f1-ad4e-a1a82fd54e33",
+      "UserPrincipalName": "phyllis.vance@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "1dfbc11b-9fe5-49d2-8c77-7c758f1dfca1",
+      "AdministrativeUnitDisplayName": "Prontoso Service Desk",
+      "UserId": "304f9996-51f0-4302-ac6d-2f9a879c5f81",
+      "UserPrincipalName": "creed.bratton@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "1dfbc11b-9fe5-49d2-8c77-7c758f1dfca1",
+      "AdministrativeUnitDisplayName": "Prontoso Service Desk",
+      "UserId": "310574ae-ff9f-4747-952e-7b27a84e9e9b",
+      "UserPrincipalName": "meredith.palmer@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "AdministrativeUnitId": "1dfbc11b-9fe5-49d2-8c77-7c758f1dfca1",
+      "AdministrativeUnitDisplayName": "Prontoso Service Desk",
+      "UserId": "4eb32e4b-e00e-4cd8-855f-4af9001482b8",
+      "UserPrincipalName": "gabe.lewis@algono.co",
+      "Action": "Existing"
+    }
+  ],
+  "groups": [
+    {
+      "Key": "PrivilegedHelpdesk",
+      "Id": "83849ffe-c40d-4fb5-8b32-7d2e14a04cfb",
+      "DisplayName": "Prontoso Privileged Helpdesk",
+      "IsAssignableToRole": true,
+      "Action": "Existing"
+    },
+    {
+      "Key": "LegacyIdentity",
+      "Id": "d6c0f7dc-6287-4e83-86d5-219e7bd5da20",
+      "DisplayName": "Prontoso Legacy Identity Admins",
+      "IsAssignableToRole": true,
+      "Action": "Existing"
+    }
+  ],
+  "groupMemberships": [
+    {
+      "GroupId": "83849ffe-c40d-4fb5-8b32-7d2e14a04cfb",
+      "GroupDisplayName": "Prontoso Privileged Helpdesk",
+      "UserId": "55c57361-49e9-4539-9e06-06d58da92f19",
+      "UserPrincipalName": "kelly.kapoor@algono.co",
+      "Action": "Added"
+    },
+    {
+      "GroupId": "83849ffe-c40d-4fb5-8b32-7d2e14a04cfb",
+      "GroupDisplayName": "Prontoso Privileged Helpdesk",
+      "UserId": "4eb32e4b-e00e-4cd8-855f-4af9001482b8",
+      "UserPrincipalName": "gabe.lewis@algono.co",
+      "Action": "Added"
+    },
+    {
+      "GroupId": "83849ffe-c40d-4fb5-8b32-7d2e14a04cfb",
+      "GroupDisplayName": "Prontoso Privileged Helpdesk",
+      "UserId": "cebfc0df-7fa1-4a2d-9da1-671300268a53",
+      "UserPrincipalName": "ryan.howard@algono.co",
+      "Action": "Existing"
+    },
+    {
+      "GroupId": "d6c0f7dc-6287-4e83-86d5-219e7bd5da20",
+      "GroupDisplayName": "Prontoso Legacy Identity Admins",
+      "UserId": "304f9996-51f0-4302-ac6d-2f9a879c5f81",
+      "UserPrincipalName": "creed.bratton@algono.co",
+      "Action": "Added"
+    },
+    {
+      "GroupId": "d6c0f7dc-6287-4e83-86d5-219e7bd5da20",
+      "GroupDisplayName": "Prontoso Legacy Identity Admins",
+      "UserId": "714bd68b-0908-464f-ab61-bf8073bb8aaf",
+      "UserPrincipalName": "todd@algono.co",
+      "Action": "Added"
+    }
+  ],
+  "roleAssignments": [
+    {
+      "RoleAssignmentId": "lAPpYvVpN0KRkAEhdxReEB9lW1jVlnFKlyd6PRbxdmk-1",
+      "PrincipalType": "User",
+      "PrincipalDisplayName": "Evelyn Thorne",
+      "PrincipalId": "585b651f-96d5-4a71-9727-7a3d16f17669",
+      "RoleDisplayName": "Global Administrator",
+      "RoleDefinitionId": "62e90394-69f5-4237-9190-012177145e10",
+      "DirectoryScopeId": "/",
+      "Action": "Existing"
+    },
+    {
+      "RoleAssignmentId": "lAPpYvVpN0KRkAEhdxReEIvWS3EICU9Gq2G_gHO7iq8-1",
+      "PrincipalType": "User",
+      "PrincipalDisplayName": "Todd Packer",
+      "PrincipalId": "714bd68b-0908-464f-ab61-bf8073bb8aaf",
+      "RoleDisplayName": "Global Administrator",
+      "RoleDefinitionId": "62e90394-69f5-4237-9190-012177145e10",
+      "DirectoryScopeId": "/",
+      "Action": "Existing"
+    },
+    {
+      "RoleAssignmentId": "4yeYchSc90m7G5YI8Va7uP6fhIMNxLVPizJ9LhSgTPs-1",
+      "PrincipalType": "Group",
+      "PrincipalDisplayName": "Prontoso Privileged Helpdesk",
+      "PrincipalId": "83849ffe-c40d-4fb5-8b32-7d2e14a04cfb",
+      "RoleDisplayName": "Helpdesk Administrator",
+      "RoleDefinitionId": "729827e3-9c14-49f7-bb1b-9608f156bbb8",
+      "DirectoryScopeId": "/",
+      "Action": "Existing"
+    },
+    {
+      "RoleAssignmentId": "2ZvjxAAR00aMZfsWDaAHH9z3wNaHYoNOhtUhnnvV2iA-1",
+      "PrincipalType": "Group",
+      "PrincipalDisplayName": "Prontoso Legacy Identity Admins",
+      "PrincipalId": "d6c0f7dc-6287-4e83-86d5-219e7bd5da20",
+      "RoleDisplayName": "Authentication Administrator",
+      "RoleDefinitionId": "c4e39bd9-1100-46d3-8c65-fb160da0071f",
+      "DirectoryScopeId": "/",
+      "Action": "Existing"
+    },
+    {
+      "RoleAssignmentId": "5wuT_mJe20eRr5jDpJo4sWFzxVXpSTlFngYG1Y2pLxkbwfsd5Z_SSYx3fHWPHfyh-2",
+      "PrincipalType": "User",
+      "PrincipalDisplayName": "Kelly Kapoor",
+      "PrincipalId": "55c57361-49e9-4539-9e06-06d58da92f19",
+      "RoleDisplayName": "User Administrator",
+      "RoleDefinitionId": "fe930be7-5e62-47db-91af-98c3a49a38b1",
+      "DirectoryScopeId": "/administrativeUnits/1dfbc11b-9fe5-49d2-8c77-7c758f1dfca1",
+      "Action": "Existing"
+    },
+    {
+      "RoleAssignmentId": "5wuT_mJe20eRr5jDpJo4seVJ3CNmHnBApLHtyrXuVKo-1",
+      "PrincipalType": "User",
+      "PrincipalDisplayName": "Toby Flenderson",
+      "PrincipalId": "23dc49e5-1e66-4070-a4b1-edcab5ee54aa",
+      "RoleDisplayName": "User Administrator",
+      "RoleDefinitionId": "fe930be7-5e62-47db-91af-98c3a49a38b1",
+      "DirectoryScopeId": "/",
+      "Action": "Existing"
+    }
+  ]
+}
