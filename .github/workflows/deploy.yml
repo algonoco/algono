@@ -27,6 +27,7 @@ jobs:
           mkdir -p dist
           cp index.html styles.css CNAME dist/
           cp -R assets dist/assets
+          cp -R thank-download-here dist/thank-download-here
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
