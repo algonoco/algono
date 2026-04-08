@@ -170,7 +170,8 @@
     }
     .nav-logo:hover { opacity: 0.7; }
     .nav-logo svg { flex-shrink: 0; }
-    .nav-cta {
+    .nav-cta,
+    .hero-cta {
       display: inline-flex;
       align-items: center;
       gap: var(--space-2);
@@ -185,8 +186,10 @@
       transition: background var(--transition), transform var(--transition);
       white-space: nowrap;
     }
-    .nav-cta:hover { background: #4de8a0; }
-    .nav-cta:active { transform: scale(0.98); }
+    .nav-cta:hover,
+    .hero-cta:hover { background: #4de8a0; }
+    .nav-cta:active,
+    .hero-cta:active { transform: scale(0.98); }
 
     /* ── Hero ── */
     .hero {
@@ -657,7 +660,7 @@
               </div>
             </div>
           </div>
-          <a href="#buy" class="nav-cta" id="hero-buy-btn">$ buy — $400</a>
+          <a href="#buy" class="hero-cta" id="hero-buy-btn">$ buy — $400</a>
         </div>
       </div>
     </section>
