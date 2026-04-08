@@ -170,8 +170,7 @@
     }
     .nav-logo:hover { opacity: 0.7; }
     .nav-logo svg { flex-shrink: 0; }
-    .nav-cta,
-    .hero-cta {
+    .nav-cta {
       display: inline-flex;
       align-items: center;
       gap: var(--space-2);
@@ -186,10 +185,8 @@
       transition: background var(--transition), transform var(--transition);
       white-space: nowrap;
     }
-    .nav-cta:hover,
-    .hero-cta:hover { background: #4de8a0; }
-    .nav-cta:active,
-    .hero-cta:active { transform: scale(0.98); }
+    .nav-cta:hover { background: #4de8a0; }
+    .nav-cta:active { transform: scale(0.98); }
 
     /* ── Hero ── */
     .hero {
@@ -223,8 +220,7 @@
     .hero-sub strong { color: var(--color-text); font-weight: 500; }
     .hero-actions {
       display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
+      align-items: center;
       gap: var(--space-6);
       flex-wrap: wrap;
     }
@@ -431,6 +427,7 @@
       text-decoration-color: var(--color-accent);
     }
     .code-block-meta {
+      max-width: 700px;
       margin-top: var(--space-3);
     }
     .code-block-note {
@@ -603,6 +600,9 @@
           </svg>
           algono
         </a>
+        <a href="#buy" class="nav-cta" id="nav-buy-btn">
+          $ buy — $400
+        </a>
       </div>
     </div>
   </nav>
@@ -628,7 +628,7 @@
               WE DON'T EVEN WANT YOUR EMAIL.<br>
               SCAN FREE.
             </div>
-            <div class="code-block" style="margin-top: var(--space-4);">
+            <div class="code-block" style="margin-top: var(--space-4); max-width: 700px;">
               <div class="code-block-header">
                 <span class="code-block-title">free audit — no sign-up</span>
                 <div class="code-block-actions">
@@ -660,7 +660,6 @@
               </div>
             </div>
           </div>
-          <a href="#buy" class="hero-cta" id="hero-buy-btn">$ buy — $400</a>
         </div>
       </div>
     </section>
