@@ -426,6 +426,15 @@
       color: var(--color-accent);
       text-decoration-color: var(--color-accent);
     }
+    .code-block-meta {
+      max-width: 700px;
+      margin-top: var(--space-3);
+    }
+    .code-block-note {
+      margin-top: var(--space-3);
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+    }
     .code-block pre {
       padding: var(--space-5) var(--space-6);
       font-size: var(--text-xs);
@@ -636,6 +645,8 @@
                 </div>
               </div>
               <pre role="img" aria-label="Free audit command"><span class="cmd">PS&gt;</span> iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 | iex</pre>
+            </div>
+            <div class="code-block-meta">
               <a
                 href="https://github.com/algonoco/algono/blob/main/prontoso/Scan-EntraPrivilegedUsers.ps1"
                 class="code-link"
@@ -644,7 +655,7 @@
               >
                 open script in browser
               </a>
-              <div style="margin-top: var(--space-3); color: var(--color-text-muted); font-size: var(--text-sm);">
+              <div class="code-block-note">
                 Standalone by default. No local CSV or JSON sidecar files required.
               </div>
             </div>
