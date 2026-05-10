@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$TenantIdOrDomain = 'algono.co',
+    [Parameter(Mandatory = $true)]
+    [string]$TenantIdOrDomain,
     [string]$OrgChartPath,
     [string]$ExceptionPath,
     [string]$OutputPath = '.\artifacts\entra-privileged-scan',

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>algono — AD/Entra Identity Remediation</title>
-  <meta name="description" content="PowerShell toolkit for detecting and remediating over-privileged AD/Entra identities. Audit, fix, and roll back. $400, one-time.">
+  <title>algono — Entra Privileged Access Audit</title>
+  <meta name="description" content="Read-only PowerShell scanner for finding over-privileged Microsoft 365 / Entra identities. Inspect first, run locally, no agent, no callback.">
 
   <!-- Preconnect for fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -614,15 +614,15 @@
     <!-- ── Hero ── -->
     <section class="hero">
       <div class="container">
-        <p class="hero-eyebrow">// AD / Entra Identity Remediation</p>
+        <p class="hero-eyebrow">// Entra Privileged Access Audit</p>
         <h1 class="hero-title">
           Stop shipping<br>
           <span class="accent">god-mode accounts</span><br>
           to production.
         </h1>
         <p class="hero-sub">
-          Clean up AD/Entra. With rollback. Buy once, use forever.
-          <strong>Intern God-Mode</strong> — the pattern of over-privileged AD/Entra identities that accumulate through ticket-driven permission creep and onboarding laziness. This toolkit finds it, fixes it, and rolls back every write if something breaks.
+          Find privilege drift in Microsoft 365 / Entra ID before it becomes an incident.
+          <strong>Intern God-Mode</strong> — the pattern of over-privileged identities that accumulate through ticket-driven permission creep and onboarding laziness. The free scanner is read-only and local; the paid toolkit handles rollback-safe remediation.
         </p>
         <div class="hero-actions">
           <div>
@@ -639,14 +639,16 @@
                     type="button"
                     class="copy-btn"
                     id="copy-free-audit-btn"
-                    data-copy-text="iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 | iex"
+                    data-copy-text="irm https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 -OutFile .\Scan-EntraPrivilegedUsers.ps1&#10;notepad .\Scan-EntraPrivilegedUsers.ps1&#10;.\Scan-EntraPrivilegedUsers.ps1 -TenantIdOrDomain yourtenant.onmicrosoft.com -UseDeviceAuthentication"
                     aria-label="Copy free audit command"
                   >
                     copy
                   </button>
                 </div>
               </div>
-              <pre role="img" aria-label="Free audit command"><span class="cmd">PS&gt;</span> iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 | iex</pre>
+              <pre role="img" aria-label="Free audit command"><span class="cmd">PS&gt;</span> irm https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 -OutFile .\Scan-EntraPrivilegedUsers.ps1
+<span class="cmd">PS&gt;</span> notepad .\Scan-EntraPrivilegedUsers.ps1
+<span class="cmd">PS&gt;</span> .\Scan-EntraPrivilegedUsers.ps1 -TenantIdOrDomain yourtenant.onmicrosoft.com -UseDeviceAuthentication</pre>
             </div>
             <div class="code-block-meta">
               <a
@@ -658,7 +660,7 @@
                 open script in browser
               </a>
               <div class="code-block-note">
-                Standalone by default. No local CSV or JSON sidecar files required.
+                Inspect first. Runs locally. Writes reports only to your workstation.
               </div>
             </div>
           </div>
@@ -672,11 +674,11 @@
         <div class="findings-inner">
           <span class="findings-prefix">// scan</span>
           <div class="findings-code">
-            <span class="hi">[ CRIT ]</span> svc_deploy — Domain Admin, last logon 847 days ago, no MFA, no owner<br>
-            <span class="hi">[ CRIT ]</span> intern_jsmith — Global Admin via nested group SALES_ALL → HELPDESK_TIER1 → DOMAIN_ADMINS<br>
-            <span class="warn">[ HIGH ]</span> app_reg_legacy — Graph API owner-level permissions, no expiry, no assigned owner<br>
-            <span class="warn">[ HIGH ]</span> 14 guest accounts with Directory.Read, onboarded &gt;180 days ago, no last sign-in record<br>
-            <span class="ok">[ INFO ]</span> Rollback manifest written to ./algono-rollback-2026-04-04T031200Z.json
+            <span class="hi">[ CRIT ]</span> svc_deploy — Global Administrator, stale sign-in, no documented owner<br>
+            <span class="hi">[ CRIT ]</span> intern_jsmith — Global Administrator via nested group SALES_ALL → HELPDESK_TIER1<br>
+            <span class="warn">[ HIGH ]</span> breakglass_old — privileged role assignment outside exception list<br>
+            <span class="warn">[ HIGH ]</span> guest_admin — external identity with privileged directory exposure<br>
+            <span class="ok">[ INFO ]</span> Summary written to ./artifacts/entra-privileged-scan/summary.md
           </div>
         </div>
       </div>
@@ -686,47 +688,47 @@
     <section class="section" id="scope">
       <div class="container">
         <p class="section-label">// what it targets</p>
-        <h2 class="section-title">Six patterns. One toolkit.</h2>
+        <h2 class="section-title">Entra privilege drift, visible.</h2>
         <ul class="findings-list" role="list">
           <li>
             <div>
-              <div class="finding-name">Stale Domain Admin / Global Admin accounts</div>
-              No MFA, no recent logon, no documented owner — high blast radius
+              <div class="finding-name">Stale Global Admin and privileged role assignments</div>
+              Weak ownership or stale sign-in signals on high-blast-radius identities
             </div>
             <span class="finding-severity sev-crit">Critical</span>
           </li>
           <li>
             <div>
-              <div class="finding-name">Service accounts with interactive login rights</div>
-              Can log in interactively, often have password age &gt; 365 days
+              <div class="finding-name">Privileged users outside your exception model</div>
+              Accounts with privileged roles but no approved business reason
             </div>
             <span class="finding-severity sev-crit">Critical</span>
           </li>
           <li>
             <div>
-              <div class="finding-name">Nested group privilege escalation paths</div>
-              Unprivileged group → nested into admin group → effective Domain Admin
+              <div class="finding-name">Group-inherited privileged access paths</div>
+              Group membership that creates effective privileged role exposure
             </div>
             <span class="finding-severity sev-high">High</span>
           </li>
           <li>
             <div>
-              <div class="finding-name">Entra app registrations with owner-level Graph permissions</div>
-              AppRoles or delegated permissions at owner/admin scope, no expiry
+              <div class="finding-name">Eligible privileged assignments</div>
+              PIM eligibility review when requested and available in the tenant
             </div>
             <span class="finding-severity sev-high">High</span>
           </li>
           <li>
             <div>
-              <div class="finding-name">Orphaned guest accounts with directory access</div>
-              Directory.Read or above, external identity, no recent sign-in
+              <div class="finding-name">External identities with privileged exposure</div>
+              Guest or external accounts appearing in privileged assignment paths
             </div>
             <span class="finding-severity sev-high">High</span>
           </li>
           <li>
             <div>
-              <div class="finding-name">Managed identity over-scope</div>
-              Azure managed identities with Contributor or Owner at subscription scope
+              <div class="finding-name">Review-ready local artifacts</div>
+              JSON, CSV, and Markdown output for triage and change-control notes
             </div>
             <span class="finding-severity sev-med">Medium</span>
           </li>
@@ -744,28 +746,28 @@
             <span class="deliverable-marker">[01]</span>
             <div class="deliverable-body">
               <div class="deliverable-title">Audit Script — read-only</div>
-              <div class="deliverable-desc">PowerShell. Connects to AD and Entra ID (Graph API). Produces a structured JSON findings report and a terminal summary. No writes. Safe to run in production.</div>
+              <div class="deliverable-desc">PowerShell. Connects to Entra ID through Microsoft Graph. Produces structured JSON/CSV findings and a Markdown summary. No writes. No callback. No agent.</div>
             </div>
           </div>
           <div class="deliverable">
             <span class="deliverable-marker">[02]</span>
             <div class="deliverable-body">
-              <div class="deliverable-title">Remediation Script</div>
-              <div class="deliverable-desc">Applies fixes from the findings report. Every write operation is captured in a timestamped rollback manifest before execution. Supports dry-run mode. Scoped — only touches what the audit flagged.</div>
+              <div class="deliverable-title">Remediation Toolkit</div>
+              <div class="deliverable-desc">Paid toolkit applies fixes from the findings report. Every write operation is captured in a timestamped rollback manifest before execution. Supports dry-run mode.</div>
             </div>
           </div>
           <div class="deliverable">
             <span class="deliverable-marker">[03]</span>
             <div class="deliverable-body">
-              <div class="deliverable-title">Rollback Script</div>
-              <div class="deliverable-desc">Reads the manifest. Undoes every write. Restores group memberships, account states, and permission scopes to pre-remediation state. If something breaks post-fix, you're one command out.</div>
+              <div class="deliverable-title">Rollback Path</div>
+              <div class="deliverable-desc">Rollback reads the manifest and restores role assignments, group memberships, and account states captured before remediation.</div>
             </div>
           </div>
           <div class="deliverable">
             <span class="deliverable-marker">[04]</span>
             <div class="deliverable-body">
               <div class="deliverable-title">Single-org perpetual license</div>
-              <div class="deliverable-desc">One tenant. No seats, no SaaS, no callbacks. Run it as many times as you need.</div>
+              <div class="deliverable-desc">One tenant. No seats, no SaaS, no callbacks. Public scanner stays inspectable; paid remediation is delivered separately.</div>
             </div>
           </div>
         </div>
@@ -782,15 +784,15 @@
 <span class="out">  Manifest: 2026-04-04T03:12:00Z  |  14 operations</span>
 <span class="out">  ────────────────────────────────────────────────</span>
 
-<span class="warn">  [01/14]</span> <span class="out">Restoring svc_deploy → Domain Admins membership ... </span><span class="good">OK</span>
-<span class="warn">  [02/14]</span> <span class="out">Reverting intern_jsmith → group nesting path ....... </span><span class="good">OK</span>
+<span class="warn">  [01/14]</span> <span class="out">Restoring svc_deploy → Global Administrator assignment ... </span><span class="good">OK</span>
+<span class="warn">  [02/14]</span> <span class="out">Reverting intern_jsmith → inherited role path ......... </span><span class="good">OK</span>
 <span class="warn">  [03/14]</span> <span class="out">Re-enabling app_reg_legacy Graph role assignment .... </span><span class="good">OK</span>
 <span class="cmt">  [...]</span>
 <span class="warn">  [14/14]</span> <span class="out">Guest account restore complete ...................... </span><span class="good">OK</span>
 
 <span class="out">  ────────────────────────────────────────────────</span>
 <span class="good">  Rollback complete. 14/14 operations succeeded.</span>
-<span class="out">  Verify in ADUC / Entra admin portal before closing change ticket.</span></pre>
+<span class="out">  Verify in the Entra admin portal before closing change ticket.</span></pre>
         </div>
       </div>
     </section>
@@ -804,10 +806,10 @@
           <div class="pricing-amount">$400</div>
           <div class="pricing-cadence">one-time · single org</div>
           <ul class="pricing-includes" role="list">
-            <li>Audit script (read-only, safe to run now)</li>
+            <li>Audit script (read-only, inspectable, safe to run locally)</li>
             <li>Remediation script with dry-run mode</li>
             <li>Rollback script + JSON manifest format</li>
-            <li>Instant ZIP download via signed URL post-payment</li>
+            <li>Delivery handled separately from the public scanner repo</li>
             <li>Perpetual license for the current version — no maintenance tail, no forced updates</li>
           </ul>
           <a
@@ -823,7 +825,7 @@
             $ checkout — $400
           </a>
           <p class="pricing-fine">
-            Payment via Stripe. Download link sent to your payment email within minutes.<br>
+            Payment via Stripe. Toolkit delivery is separate from the public scanner repository.<br>
             Software provided as-is. One-time purchase for the current toolkit build. No subscription, no recurring fees, no automated updates.<br>
             Questions: <a href="mailto:architect@algono.co" style="color: var(--color-text-muted);">architect@algono.co</a>
           </p>
@@ -842,21 +844,21 @@
               Does this require an agent or any persistent install?
               <span class="faq-q-marker" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a">No agent. No persistent install. PowerShell scripts you run on-demand from a management workstation or jump host with appropriate AD/Graph API permissions. Nothing phones home.</div>
+            <div class="faq-a">No agent. No persistent install. PowerShell scripts you run on-demand from a management workstation or jump host with appropriate Microsoft Graph permissions. Nothing phones home.</div>
           </div>
           <div class="faq-item" role="listitem">
             <button class="faq-q" aria-expanded="false">
               What permissions does the audit script need?
               <span class="faq-q-marker" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a">Read-only. For AD: standard domain user with read access to AD objects is sufficient for most checks; some group membership traversal requires ActiveDirectory module. For Entra/Graph: Directory.Read.All and Application.Read.All delegated permissions or a service principal with the same scope.</div>
+            <div class="faq-a">Read-only. For the public Entra scanner: User.Read.All, AuditLog.Read.All, RoleManagement.Read.Directory, and GroupMember.Read.All delegated Microsoft Graph scopes.</div>
           </div>
           <div class="faq-item" role="listitem">
             <button class="faq-q" aria-expanded="false">
               What does "single-org license" mean exactly?
               <span class="faq-q-marker" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a">One Active Directory forest / one Entra ID tenant. Run it as many times as you want against that environment. If you need to use it across multiple client tenants (MSP scenario), contact architect@algono.co.</div>
+            <div class="faq-a">One Entra ID tenant. Run it as many times as you want against that environment. If you need to use it across multiple client tenants (MSP scenario), contact architect@algono.co.</div>
           </div>
           <div class="faq-item" role="listitem">
             <button class="faq-q" aria-expanded="false">
@@ -870,14 +872,14 @@
               Can I try it before buying?
               <span class="faq-q-marker" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a">The free audit script is a direct download. Run it now — no sign-up, no issue to open, no email required, no local CSV or JSON files needed. <code>iwr https://raw.githubusercontent.com/algonoco/algono/main/prontoso/Scan-EntraPrivilegedUsers.ps1 | iex</code> — or save to disk first and inspect it. Read-only, no writes. If you have findings worth fixing, the toolkit is $400.</div>
+            <div class="faq-a">The free audit script is a direct download. No sign-up, no issue to open, no email required. Save it locally, inspect it, then run it with your tenant: <code>.\Scan-EntraPrivilegedUsers.ps1 -TenantIdOrDomain yourtenant.onmicrosoft.com -UseDeviceAuthentication</code>. Read-only, no writes. If you have findings worth fixing, the toolkit is $400.</div>
           </div>
           <div class="faq-item" role="listitem">
             <button class="faq-q" aria-expanded="false">
               When do I get access after payment?
               <span class="faq-q-marker" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a">Immediately. Stripe redirects you to a success page with a signed URL to download the toolkit .zip.</div>
+            <div class="faq-a">The paid remediation toolkit is delivered separately from this public scanner repository so the free scanner can remain inspectable without exposing paid artifacts.</div>
           </div>
         </div>
       </div>

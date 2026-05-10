@@ -26,8 +26,8 @@ The current scaffold is a thin vertical slice:
 
 ## Immediate next build steps
 
-1. Replace `SampleInventoryCollector` with a real Active Directory collector.
-2. Add ACL, OU, GPO, and local admin collection.
-3. Expand scoring from heuristics to path-aware graph analysis.
-4. Swap the Markdown summary emitter for a Typst-backed PDF report emitter.
-5. Add regression tests using canned directory snapshots.
+1. Decide whether the C# scaffold should wrap the current PowerShell Entra scanner or become a native Microsoft Graph collector.
+2. Expand scoring from heuristics to path-aware graph analysis.
+3. Swap the Markdown summary emitter for a Typst-backed PDF report emitter.
+4. Add regression tests using canned Entra directory snapshots.
+5. Treat local AD collection as a separate, explicitly scoped module before making AD claims in public copy.

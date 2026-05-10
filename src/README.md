@@ -15,10 +15,11 @@ The scaffold is intentionally narrow:
 
 - `sample` mode is implemented end to end.
 - Artifacts are emitted as JSON plus a Markdown narrative.
-- The real Active Directory collector is not implemented yet.
+- The real Entra collector lives in `prontoso/Scan-EntraPrivilegedUsers.ps1`.
+- This C# scaffold is retained as a future typed scanner/reporting path.
 
 ## Run
 
 ```powershell
-dotnet run --project .\src\Algono.Scanner.Cli\Algono.Scanner.Cli.csproj -- --mode sample --domain corp.example.local
+dotnet run --project .\src\Algono.Scanner.Cli\Algono.Scanner.Cli.csproj -- --mode sample --domain contoso.onmicrosoft.com
 ```
