@@ -45,6 +45,38 @@ Validate local prerequisites without authenticating:
 .\Scan-EntraPrivilegedUsers.ps1 -TenantIdOrDomain yourtenant.onmicrosoft.com -ValidateOnly
 ```
 
+## Windows Authentication Notes
+
+Microsoft Graph PowerShell uses Web Account Manager (WAM) by default on Windows. If you run the scanner from an embedded terminal, the Microsoft sign-in window may open behind other windows.
+
+If browser auth is awkward, use the device-code path:
+
+```powershell
+.\Scan-EntraPrivilegedUsers.ps1 -TenantIdOrDomain yourtenant.onmicrosoft.com -UseDeviceAuthentication
+```
+
+The scanner maps `-UseDeviceAuthentication` to Microsoft Graph PowerShell's `-UseDeviceCode` mode.
+
+## Test Tenant Validation
+
+The public scanner was tested against the Algono/Prontoso test tenant on 2026-05-10 using PowerShell 7.6.1 and Microsoft.Graph 2.36.1.
+
+Validation run:
+
+```powershell
+.\Scan-EntraPrivilegedUsers.ps1 -TenantIdOrDomain algono.co -OutputPath .\artifacts\entra-privileged-scan-test
+```
+
+Observed output:
+
+- User collection source: `v1.0-with-signInActivity`
+- Inventory rows: `10`
+- Review findings: `10`
+- Findings by severity: `8 Critical`, `2 High`
+- Access paths: `5 Direct`, `5 Group`
+- Exception handling: `1 ExceptionApproved`, `9 ReviewRequired`
+- All finding UPN domains were `algono.co`.
+
 ## Paid Toolkit Boundary
 
 The paid remediation and rollback toolkit is not shipped in this public repo. It is delivered separately after purchase so the public scanner can remain inspectable without exposing paid remediation artifacts.

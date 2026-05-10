@@ -35,6 +35,8 @@ Or download directly:
 
 Connects to Entra via Graph API. Outputs structured JSON findings and a terminal summary.
 
+For scopes, auth behavior, and test-tenant validation notes, see [`TRUST.md`](TRUST.md).
+
 ## Full toolkit — $400
 
 The paid remediation toolkit applies fixes from the findings report. Every write is captured in a timestamped rollback manifest before execution. Dry-run mode is supported.
