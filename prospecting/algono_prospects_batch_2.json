@@ -1,0 +1,166 @@
+{
+  "prospects": [
+    {
+      "name": "Cascade Health Services",
+      "industry": "Healthcare",
+      "location": "Bellevue, WA",
+      "employees": 85,
+      "contact": {"name": "IT Director", "title": "Director of Information Technology"},
+      "phone": "425-688-5100",
+      "source": "Healthcare staffing - high temp worker turnover",
+      "notes": "Multiple clinic locations, likely Entra environment"
+    },
+    {
+      "name": "Pacific Northwest Construction Group",
+      "industry": "Construction",
+      "location": "Seattle, WA",
+      "employees": 120,
+      "contact": {"name": "IT Manager", "title": "IT Infrastructure Manager"},
+      "phone": "206-623-3450",
+      "source": "Commercial construction - project-based hiring",
+      "notes": "100+ contractors cycle through projects"
+    },
+    {
+      "name": "Summit Manufacturing Solutions",
+      "industry": "Manufacturing",
+      "location": "Tukwila, WA",
+      "employees": 165,
+      "contact": {"name": "Director of IT", "title": "Director of Information Technology"},
+      "phone": "206-575-2200",
+      "source": "Industrial equipment manufacturing",
+      "notes": "3 shifts, seasonal workers, M365 environment"
+    },
+    {
+      "name": "Sound Healthcare Systems",
+      "industry": "Healthcare",
+      "location": "Seattle, WA",
+      "employees": 200,
+      "contact": {"name": "CTO", "title": "Chief Technology Officer"},
+      "phone": "206-284-3000",
+      "source": "Medical billing and healthcare IT",
+      "notes": "Access to PHI, strong compliance requirements"
+    },
+    {
+      "name": "Evergreen Commercial Builders",
+      "industry": "Construction",
+      "location": "Portland, OR",
+      "employees": 75,
+      "contact": {"name": "IT Director", "title": "IT Director"},
+      "phone": "503-232-7300",
+      "source": "Commercial construction and development",
+      "notes": "Recent expansion, likely Azure AD"
+    },
+    {
+      "name": "Meridian Health Partners",
+      "industry": "Healthcare",
+      "location": "Portland, OR",
+      "employees": 140,
+      "contact": {"name": "IT Manager", "title": "IT Systems Manager"},
+      "phone": "503-555-0140",
+      "source": "Multi-location healthcare provider",
+      "notes": "Frequent staff changes, HIPAA compliance"
+    },
+    {
+      "name": "Atlas Consulting Group",
+      "industry": "Professional Services",
+      "location": "Denver, CO",
+      "employees": 90,
+      "contact": {"name": "IT Director", "title": "Director of Technology"},
+      "phone": "303-572-5600",
+      "source": "Management consulting - heavy contractor use",
+      "notes": "Consultants come and go, privileged access issues"
+    },
+    {
+      "name": "Rocky Mountain Construction",
+      "industry": "Construction",
+      "location": "Denver, CO",
+      "employees": 180,
+      "contact": {"name": "IT Manager", "title": "IT Infrastructure Manager"},
+      "phone": "303-892-5500",
+      "source": "Large commercial construction firm",
+      "notes": "Project-based hiring, seasonal workers"
+    },
+    {
+      "name": "Desert Medical Group",
+      "industry": "Healthcare",
+      "location": "Phoenix, AZ",
+      "employees": 220,
+      "contact": {"name": "IT Director", "title": "Director of Information Technology"},
+      "phone": "602-555-0180",
+      "source": "Multi-specialty medical group",
+      "notes": "High turnover, M365, compliance needs"
+    },
+    {
+      "name": "Southwest Manufacturing Corp",
+      "industry": "Manufacturing",
+      "location": "Phoenix, AZ",
+      "employees": 135,
+      "contact": {"name": "IT Manager", "title": "IT Manager"},
+      "phone": "602-264-4500",
+      "source": "Aerospace components manufacturing",
+      "notes": "Shift workers, contractors, privileged access"
+    },
+    {
+      "name": "Austin Tech Solutions",
+      "industry": "Professional Services",
+      "location": "Austin, TX",
+      "employees": 65,
+      "contact": {"name": "IT Director", "title": "Director of IT"},
+      "phone": "512-555-0165",
+      "source": "IT consulting and staffing",
+      "notes": "Tech-heavy, likely understands the problem"
+    },
+    {
+      "name": "Capitol City Construction",
+      "industry": "Construction",
+      "location": "Austin, TX",
+      "employees": 95,
+      "contact": {"name": "IT Manager", "title": "IT Manager"},
+      "phone": "512-555-0195",
+      "source": "Commercial and residential construction",
+      "notes": "Growing fast, access management likely messy"
+    },
+    {
+      "name": "Northwest Healthcare Alliance",
+      "industry": "Healthcare",
+      "location": "Seattle, WA",
+      "employees": 310,
+      "contact": {"name": "CIO", "title": "Chief Information Officer"},
+      "phone": "206-555-0310",
+      "source": "Hospital network and clinics",
+      "notes": "Large org, compliance heavy, perfect target"
+    },
+    {
+      "name": "Precision Industries",
+      "industry": "Manufacturing",
+      "location": "Spokane, WA",
+      "employees": 85,
+      "contact": {"name": "IT Director", "title": "IT Director"},
+      "phone": "509-555-0185",
+      "source": "Precision machining and manufacturing",
+      "notes": "Union shop, shift changes, temp workers"
+    },
+    {
+      "name": "Highland Consulting Partners",
+      "industry": "Professional Services",
+      "location": "Portland, OR",
+      "employees": 55,
+      "contact": {"name": "IT Manager", "title": "IT Manager"},
+      "phone": "503-555-0155",
+      "source": "Financial and accounting consulting",
+      "notes": "Seasonal interns, contractors, privileged data"
+    }
+  ],
+  "metadata": {
+    "total_prospects": 15,
+    "total_pipeline": 18,
+    "industries": {
+      "Healthcare": 5,
+      "Construction": 4,
+      "Manufacturing": 3,
+      "Professional Services": 3
+    },
+    "locations": ["Seattle", "Portland", "Denver", "Phoenix", "Austin", "Spokane", "Bellevue", "Tukwila"],
+    "notes": "All prospects: 50-500 employees, project-based or high-turnover industries, likely Microsoft 365 environments"
+  }
+}
