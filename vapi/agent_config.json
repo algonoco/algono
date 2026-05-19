@@ -67,7 +67,7 @@ STRICT PROHIBITIONS:
       "provider": "11labs",
       "voiceId": "21m00Tcm4TlvDq8ikWAM"
     },
-    "firstMessage": "This is Algono from algono dot co. We sell PowerShell script finding god-mode accounts in Microsoft 365. You run it yourself. We do not phone home, do not collect data. Handle I.T. security?",
+    "firstMessage": "Hello? Hello. Hi, this is Algono from algono dot co. We sell PowerShell script finding god-mode accounts in Microsoft 365. You run it yourself. We do not phone home, do not collect data. Handle I.T. security?",
     "endCallPhrases": ["goodbye", "end call", "hang up", "algono out"],
     "maxDurationSeconds": 180,
     "functions": [
