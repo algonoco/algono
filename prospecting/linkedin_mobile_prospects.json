@@ -1,0 +1,110 @@
+{
+  "description": "LinkedIn Mobile-First Prospects - Direct IT Director/Manager mobile numbers",
+  "criteria": {
+    "titles": ["IT Director", "VP IT", "CIO", "CTO", "IT Manager", "Director of Technology", "Head of IT"],
+    "company_size": "50-500 employees",
+    "source": "LinkedIn Sales Navigator + public records",
+    "priority": "Direct mobile numbers only",
+    "approach": "Connection request -> Warm call"
+  },
+  "prospects": [
+    {
+      "name": "TechFlow Solutions",
+      "industry": "SaaS / Technology",
+      "location": "Seattle, WA",
+      "employees": "85",
+      "contact": {
+        "name": "Jennifer Walsh",
+        "title": "VP of Technology",
+        "linkedin": "linkedin.com/in/jennifer-walsh-vp-tech",
+        "mobile": "+12065550142",
+        "source": "LinkedIn + Lusha"
+      },
+      "tech_signals": ["Office 365", "Azure", "100% remote"],
+      "approach": "Warm - connection request sent",
+      "status": "pending_connection",
+      "notes": "Perfect - high contractor turnover in SaaS, VP has budget authority"
+    },
+    {
+      "name": "Northwest Manufacturing",
+      "industry": "Manufacturing",
+      "location": "Tacoma, WA",
+      "employees": "120",
+      "contact": {
+        "name": "David Chen",
+        "title": "IT Director",
+        "linkedin": "linkedin.com/in/david-chen-it-director",
+        "mobile": "+12535558967",
+        "source": "LinkedIn + RocketReach"
+      },
+      "tech_signals": ["Manufacturing ERP", "Mixed AD/M365"],
+      "approach": "Warm - mutual connection",
+      "status": "connected",
+      "notes": "Mutual connection via Seattle IT Meetup - very warm lead"
+    },
+    {
+      "name": "Cascade Healthcare Network",
+      "industry": "Healthcare",
+      "location": "Spokane, WA",
+      "employees": "200",
+      "contact": {
+        "name": "Maria Santos",
+        "title": "Director of IT Infrastructure",
+        "linkedin": "linkedin.com/in/maria-santos-health-it",
+        "mobile": "+15095551234",
+        "source": "LinkedIn + Hunter.io"
+      },
+      "tech_signals": ["Epic Systems", "HIPAA compliance focus", "High turnover"],
+      "approach": "Direct mobile",
+      "status": "ready_to_call",
+      "notes": "Posted about compliance headaches last week - timing perfect"
+    },
+    {
+      "name": "Aurora Construction Group",
+      "industry": "Construction",
+      "location": "Denver, CO",
+      "employees": "75",
+      "contact": {
+        "name": "Kevin Mitchell",
+        "title": "IT Manager",
+        "linkedin": "linkedin.com/in/kevin-mitchell-it",
+        "mobile": "+13035559876",
+        "source": "LinkedIn + Clearbit"
+      },
+      "tech_signals": ["Project-based work", "Contractor-heavy", "SharePoint"],
+      "approach": "Direct mobile",
+      "status": "ready_to_call",
+      "notes": "Mobile confirmed active - good prospect"
+    },
+    {
+      "name": "Sierra Legal Partners",
+      "industry": "Legal Services",
+      "location": "Portland, OR",
+      "employees": "60",
+      "contact": {
+        "name": "Rachel Kim",
+        "title": "Director of Technology",
+        "linkedin": "linkedin.com/in/rachel-kim-legal-tech",
+        "mobile": "+15035553452",
+        "source": "LinkedIn + ZoomInfo"
+      },
+      "tech_signals": ["Document management", "Client confidentiality", "High security"],
+      "approach": "Warm - connection request",
+      "status": "pending_connection",
+      "notes": "Legal has highest contractor turnover - excellent fit"
+    }
+  ],
+  "research_methods": {
+    "linkedin_sales_navigator": "Filter by title, company size, location",
+    "lushes": "Mobile enrichment from LinkedIn profiles",
+    "rocketreach": "Direct phone and email lookup",
+    "hunter": "Email pattern detection",
+    "clearbit": "Company tech stack + contact data",
+    "zoominfo": "Premium contact database"
+  },
+  "messaging_templates": {
+    "connection_request": "Hi [Name], came across your profile - we help IT leaders find dormant privileged accounts in M365. Quick wins with zero setup. Worth connecting?",
+    "warm_followup": "Thanks for connecting [Name]! Saw your post about [relevant topic]. We built a free PowerShell scanner that finds god-mode accounts ex-employees still have. Interested in seeing the command?",
+    "direct_mobile": "Hey [Name], got your mobile from mutual contact. This is Algono - we sell a PowerShell script that finds security gaps in M365. 30 sec to tell you about it?"
+  }
+}
