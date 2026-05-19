@@ -32,19 +32,31 @@ class CallQueue:
         """Load all prospects from both batches"""
         base_path = Path(__file__).parent.parent / "prospecting"
         
-        # Load batch 1
-        with open(base_path / "prospects.json") as f:
-            batch1 = json.load(f)
-            for p in batch1.get("prospects", []):
-                p["batch"] = 1
-                self.prospects.append(p)
+        # Load batch 1 (raw list format)
+        try:
+            with open(base_path / "prospects.json") as f:
+                batch1 = json.load(f)
+                # Handle both list and dict formats
+                if isinstance(batch1, list):
+                    prospects_list = batch1
+                else:
+                    prospects_list = batch1.get("prospects", [])
+                
+                for p in prospects_list:
+                    p["batch"] = 1
+                    self.prospects.append(p)
+        except Exception as e:
+            print(f"⚠️ Error loading batch 1: {e}")
         
-        # Load batch 2
-        with open(base_path / "algono_prospects_batch_2.json") as f:
-            batch2 = json.load(f)
-            for p in batch2.get("prospects", []):
-                p["batch"] = 2
-                self.prospects.append(p)
+        # Load batch 2 (dict format with 'prospects' key)
+        try:
+            with open(base_path / "algono_prospects_batch_2.json") as f:
+                batch2 = json.load(f)
+                for p in batch2.get("prospects", []):
+                    p["batch"] = 2
+                    self.prospects.append(p)
+        except Exception as e:
+            print(f"⚠️ Error loading batch 2: {e}")
         
         # Filter to only call prospects with phone numbers
         self.prospects = [p for p in self.prospects if p.get("phone")]
