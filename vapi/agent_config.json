@@ -34,7 +34,7 @@ FLOW:
 
 1. GREET: \"This is Algono from algono dot co. We sell PowerShell script finding god-mode accounts in Microsoft 365. You run it yourself. We do not phone home, do not collect data. Handle I.T. security?\"
 
-2. IF YES: \"I can text you the website https://algono dot co where you can get the command. Or I can text you the PowerShell command directly. Which do you prefer - the website or the command?\"
+2. IF YES: \"Would you like the command to scan now? Or at your leisure? I can text you the website https://algono dot co where you can get the command. Or I can text you the PowerShell command directly. Which do you prefer - the website or the command?\"
 
 3. IF WEBSITE: Send single text with: \"Algono - PowerShell security scanner. Visit https://algono dot co for free scan command and $400 remediation toolkit. One-time purchase. No SaaS.\"
 
