@@ -24,27 +24,59 @@ HEADERS = {
 class CallQueue:
     def __init__(self):
         self.prospects = []
-        self.active_calls = {}  # call_id -> prospect_info
+        self.active_calls = {}
         self.completed_calls = []
         self.load_prospects()
         
+    def normalize_prospect(self, p, batch):
+        """Normalize prospect fields from different formats"""
+        # Handle both batch formats
+        normalized = {
+            "batch": batch,
+            "phone": p.get("phone"),
+        }
+        
+        # Handle name field variations
+        if "name" in p:
+            normalized["name"] = p["name"]
+        elif "company_name" in p:
+            normalized["name"] = p["company_name"]
+        else:
+            normalized["name"] = "Unknown"
+        
+        # Handle contact field variations
+        if "contact" in p:
+            contact = p["contact"]
+            normalized["contact_name"] = contact.get("name", "IT Manager")
+            normalized["contact_title"] = contact.get("title", "IT Manager")
+        elif "contact_name" in p:
+            normalized["contact_name"] = p["contact_name"]
+            normalized["contact_title"] = p.get("contact_title", "IT Manager")
+        else:
+            normalized["contact_name"] = "IT Manager"
+            normalized["contact_title"] = "IT Manager"
+        
+        # Copy other useful fields
+        normalized["industry"] = p.get("industry", "Unknown")
+        normalized["location"] = p.get("location", "Unknown")
+        normalized["employees"] = p.get("employees") or p.get("employee_count", "Unknown")
+        
+        return normalized
+        
     def load_prospects(self):
-        """Load all prospects from both batches"""
+        """Load all prospects from both batches and normalize"""
         base_path = Path(__file__).parent.parent / "prospecting"
         
-        # Load batch 1 (raw list format)
+        # Load batch 1 (raw list format with company_name/contact_name)
         try:
             with open(base_path / "prospects.json") as f:
                 batch1 = json.load(f)
-                # Handle both list and dict formats
                 if isinstance(batch1, list):
-                    prospects_list = batch1
-                else:
-                    prospects_list = batch1.get("prospects", [])
-                
-                for p in prospects_list:
-                    p["batch"] = 1
-                    self.prospects.append(p)
+                    for p in batch1:
+                        normalized = self.normalize_prospect(p, 1)
+                        if normalized["phone"]:
+                            self.prospects.append(normalized)
+                print(f"✅ Batch 1: Loaded {len(self.prospects)} prospects")
         except Exception as e:
             print(f"⚠️ Error loading batch 1: {e}")
         
@@ -52,15 +84,16 @@ class CallQueue:
         try:
             with open(base_path / "algono_prospects_batch_2.json") as f:
                 batch2 = json.load(f)
+                count_before = len(self.prospects)
                 for p in batch2.get("prospects", []):
-                    p["batch"] = 2
-                    self.prospects.append(p)
+                    normalized = self.normalize_prospect(p, 2)
+                    if normalized["phone"]:
+                        self.prospects.append(normalized)
+                print(f"✅ Batch 2: Loaded {len(self.prospects) - count_before} prospects")
         except Exception as e:
             print(f"⚠️ Error loading batch 2: {e}")
         
-        # Filter to only call prospects with phone numbers
-        self.prospects = [p for p in self.prospects if p.get("phone")]
-        print(f"✅ Loaded {len(self.prospects)} prospects")
+        print(f"✅ Total prospects ready to call: {len(self.prospects)}")
         
     def get_pending_prospects(self):
         """Get prospects not yet called"""
@@ -75,7 +108,7 @@ class CallQueue:
             "phoneNumberId": PHONE_NUMBER_ID,
             "customer": {
                 "number": prospect["phone"],
-                "name": prospect["contact"]["name"]
+                "name": prospect["contact_name"]
             }
         }
         
@@ -95,7 +128,7 @@ class CallQueue:
                     "started_at": datetime.now().isoformat(),
                     "status": "queued"
                 }
-                print(f"📞 Call {call_id} to {prospect['name']} ({prospect['phone']}) - {prospect['contact']['title']}")
+                print(f"📞 Call {call_id} to {prospect['name']} ({prospect['phone']}) - {prospect['contact_name']}, {prospect['contact_title']}")
                 return call_id
             else:
                 print(f"❌ Failed to call {prospect['name']}: {response.status_code}")
@@ -118,13 +151,11 @@ class CallQueue:
                 status = data.get("status")
                 
                 if status in ["ended", "failed", "canceled"]:
-                    # Call completed
                     info = self.active_calls.pop(call_id)
                     info["ended_at"] = datetime.now().isoformat()
                     info["final_status"] = status
                     info["duration"] = data.get("duration", 0)
                     self.completed_calls.append(info)
-                    
                     print(f"✅ Call {call_id} completed - {info['prospect']['name']} ({status})")
                     return True
                 else:
@@ -149,12 +180,20 @@ class CallQueue:
         print(f"Active:     {active}/2")
         print(f"Completed:  {completed}/{total}")
         print(f"{'='*60}\n")
+        
+        if self.completed_calls:
+            print("Recent completions:")
+            for c in self.completed_calls[-3:]:
+                p = c['prospect']
+                print(f"  - {p['name']}: {c['final_status']} ({c.get('duration', 'N/A')}s)")
+            print()
     
     def run(self):
         """Main loop - keep 2 calls active until all prospects contacted"""
         print("=" * 60)
-        print("ALGONO CALL QUEUE SYSTEM")
+        print("ALGONO CALL QUEUE SYSTEM - ENGAGED")
         print("2-Concurrency Management")
+        print("HI HO SILVER, AWAY!")
         print("=" * 60)
         print()
         
@@ -169,25 +208,34 @@ class CallQueue:
                 # Get pending prospects
                 pending = self.get_pending_prospects()
                 
-                # Print status
+                # Print status every iteration
                 self.print_status()
                 
                 # Fill up to 2 concurrent calls
-                while len(self.active_calls) < 2 and pending:
+                calls_made = 0
+                while len(self.active_calls) < 2 and pending and calls_made < 2:
                     prospect = pending.pop(0)
-                    self.make_call(prospect)
-                    time.sleep(2)  # Brief delay between calls
+                    call_id = self.make_call(prospect)
+                    if call_id:
+                        calls_made += 1
+                        time.sleep(1)  # Brief delay between calls
                 
                 # Check if complete
                 if not pending and not self.active_calls:
-                    print("\n🎉 ALL PROSPECTS CONTACTED!")
+                    print("\n" + "=" * 60)
+                    print("🎉 ALL PROSPECTS CONTACTED!")
+                    print("=" * 60)
+                    print(f"\nTotal calls completed: {len(self.completed_calls)}")
+                    self.print_status()
                     break
                 
                 # Wait before next check
                 time.sleep(10)
                 
         except KeyboardInterrupt:
-            print("\n\n⚠️ Queue stopped by user")
+            print("\n\n" + "=" * 60)
+            print("⚠️  QUEUE STOPPED BY USER")
+            print("=" * 60)
             self.print_status()
 
 if __name__ == "__main__":
