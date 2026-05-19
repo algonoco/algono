@@ -101,13 +101,25 @@ class CallQueue:
         called.update({info["prospect"]["name"] for info in self.active_calls.values()})
         return [p for p in self.prospects if p["name"] not in called]
     
+    def clean_phone(self, phone_number):
+        """Clean phone number to E.164 format"""
+        # Remove all non-digit characters
+        phone = ''.join(c for c in phone_number if c.isdigit())
+        # Add +1 prefix if not present
+        if not phone.startswith('+'):
+            phone = '+1' + phone
+        return phone
+        
     def make_call(self, prospect):
         """Initiate a call to a prospect"""
+        # Clean phone to E.164 format
+        cleaned_phone = self.clean_phone(prospect["phone"])
+        
         payload = {
             "assistantId": ASSISTANT_ID,
             "phoneNumberId": PHONE_NUMBER_ID,
             "customer": {
-                "number": prospect["phone"],
+                "number": cleaned_phone,
                 "name": prospect["contact_name"]
             }
         }
@@ -131,7 +143,8 @@ class CallQueue:
                 print(f"📞 Call {call_id} to {prospect['name']} ({prospect['phone']}) - {prospect['contact_name']}, {prospect['contact_title']}")
                 return call_id
             else:
-                print(f"❌ Failed to call {prospect['name']}: {response.status_code}")
+                error_msg = response.text if response.text else "No error details"
+                print(f"❌ Failed to call {prospect['name']}: {response.status_code} - {error_msg[:100]}")
                 return None
         except Exception as e:
             print(f"❌ Error calling {prospect['name']}: {e}")
